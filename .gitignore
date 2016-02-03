@@ -1,0 +1,10 @@
+*
+# white list for git
+!*.lua
+!*.md
+!.gitignore
+!*.rockspec
+!*.txt
+!LICENSE
+
+
