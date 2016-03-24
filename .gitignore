@@ -1,10 +1,11 @@
-*
-# white list for git
-!*.lua
-!*.md
-!.gitignore
-!*.rockspec
-!*.txt
-!LICENSE
+# ignore Todo documents
+Todo
+# ignore hidden files
+.*
+# ignore temporary files
+*~
 
-
+# ignore deprecated files
+_*
+# ignore build
+build/*
