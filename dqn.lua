@@ -33,7 +33,6 @@ dqn requires the following inputs on construction.
   param:
     capacity: the capacity of replay memory
     batchSize: the size of minibatch
-    epslon: probability of random action
     discount: discount factor of reward
  
 ]]--
@@ -41,14 +40,16 @@ local classic = require 'classic'
 
 local dqn = classic.class('dqn')
 
-function dqn:_init(param)
+function dqn:_init(qnet, param)
+  self.qnet = qnet:clone()
+  self.Tqnet = self.qnet:clone()
   self.param = param
   self.memory = {}
   self.memoryLast = 0
   self.criterion = nn.MSECriterion()
 end
 
-function dqn:replay(trans, Tqnet)
+function dqn:replay(trans)
   -- store transition "trans"
   self.memoryLast = self.memoryLast + 1
   --print('insert', self.memoryLast)
@@ -84,7 +85,7 @@ function dqn:replay(trans, Tqnet)
   -- cascade next states
   
   -- compute Q value through target qnet
-  local qValue = Tqnet:forward(mbNextState)
+  local qValue = self.Tqnet:forward(mbNextState)
   --print('qValue')
   --print(qValue)
   local maxQ, maxID = torch.max(qValue, 2) -- max Q of each transition 
@@ -101,7 +102,7 @@ function dqn:replay(trans, Tqnet)
   return sampleTrans
 end
 
-function dqn:learn(sampleTrans, qnet, lr)
+function dqn:learn(sampleTrans, lr)
   -- organize sample transitions into minibatch input
   local mbState = torch.Tensor(self.param.batchSize, sampleTrans[1].s:size(1))
   local mbTarget = torch.Tensor(self.param.batchSize)-- Target is a number
@@ -114,7 +115,7 @@ function dqn:learn(sampleTrans, qnet, lr)
   --print('mbTarget')
   --print(mbTarget)
   -- Forward
-  local Qvalue = qnet:forward(mbState)
+  local Qvalue = self.qnet:forward(mbState)
   -- select Q value to the selected action
   local ActQvalue = torch.Tensor(self.param.batchSize)
   for i = 1, self.param.batchSize do
@@ -140,16 +141,16 @@ function dqn:learn(sampleTrans, qnet, lr)
   end 
   --print('gradInput')
   --print(gradInput)
-  qnet:zeroGradParameters()
-  qnet:backward(mbState, gradInput)
-  qnet:updateParameters(lr)
+  self.qnet:zeroGradParameters()
+  self.qnet:backward(mbState, gradInput)
+  self.qnet:updateParameters(lr)
 end
 
-function dqn:update(qnet)
-  return qnet:clone()
+function dqn:update()
+  self.Tqnet = self.qnet:clone()
 end
 
-function dqn:act(state, qnet, epslon)
+function dqn:act(state)
   if state:dim() == 1 then -- add minibatch dimension 
     state = state:view(1,state:size(1))
   end
@@ -157,14 +158,14 @@ function dqn:act(state, qnet, epslon)
   print('state', state)
   
   if not self.action then -- initialize self.action
-    local output = qnet:forward(state)
+    local output = self.qnet:forward(state)
     self.action = torch.Tensor(output:size(2))
   end 
   
   local rand = math.random()
-  if rand > epslon then -- greedy
+  if rand > self.param.epslon then -- greedy
     self.action = self.action:zero()
-    local Qvalue = qnet:forward(state)
+    local Qvalue = self.qnet:forward(state)
     print('Qvalue', Qvalue)
     local maxValue, maxID = torch.max(Qvalue,2)
     print('maxID',maxID)
