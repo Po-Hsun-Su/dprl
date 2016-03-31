@@ -1,40 +1,37 @@
 --[[
+"dqn" means "Deep Q-network".
 
-"dqn" means "Deep Q-network"
+dqn requires the following inputs on construction. 
+  qnet: Neural network model
+  param:
+    capacity: the capacity of replay memory
+    batchSize: the size of minibatch
+    discount: discount factor of reward
+    epslon: the probability of selecting random action
+    
 dqn implements the following functions.
-  replay: store a transition and sample a minibatch of transitions given target qnet
+  replay: store a transition, sample a minibatch of transitions and compute target q value of sampled transitions
     input: 
       1. a transition: a table containg state (s), action (a), reward (r), next state (ns), and terminal (t). 
         Ex: trans = {s, a, r, ns, t} 
         only reward is number
-        t = nil if not terminal state
-      2. target qnet: 
+        t = nil if not terminal state 
     output: a sample of minibatch of transitions and the target Q values of each transitions
     
   learn: take sampled minibatch and target Q values and update given qnet work
     input:
       1. minibatch of transitions and target Q values
-      2. learning qnet
-      3. lr: learning rate
-    output: learned qnet
+      2. lr: learning rate
+    output: None
         
   update: update the target Q network by current Q network
-    input: current Q network
-    output: new target Q network
+    input: None
+    output: None
+    
   act: sample an action according to current state
     input: 
       1. s: current state
-      2. qnet: Q network
-      3. epslon: probability of random action
-    output: action
-      
-dqn requires the following inputs on construction. 
-  qnet:
-  param:
-    capacity: the capacity of replay memory
-    batchSize: the size of minibatch
-    discount: discount factor of reward
- 
+    output: action (Onehot representation)
 ]]--
 local classic = require 'classic'
 
@@ -155,7 +152,7 @@ function dqn:act(state)
     state = state:view(1,state:size(1))
   end
   self.state = state
-  print('state', state)
+  --print('state', state)
   
   if not self.action then -- initialize self.action
     local output = self.qnet:forward(state)
@@ -166,15 +163,15 @@ function dqn:act(state)
   if rand > self.param.epslon then -- greedy
     self.action = self.action:zero()
     local Qvalue = self.qnet:forward(state)
-    print('Qvalue', Qvalue)
+    --print('Qvalue', Qvalue)
     local maxValue, maxID = torch.max(Qvalue,2)
-    print('maxID',maxID)
+    --print('maxID',maxID)
     self.action[maxID[1][1]] = 1
   else -- random action
     self.action = self.action:zero()
     local dim = self.action:size(1)
     local randID = math.random(dim)
-    print('randID',randID)
+    --print('randID',randID)
     self.action[randID] = 1
   end
   return self.action

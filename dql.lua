@@ -9,10 +9,12 @@ Inputs for initialization:
     capacity: capacity of replay memory
     batchsize: batch size of samples from replay memory
     discount: discount in cumulative reward
-    
-    
-  preprop: preprocessing function (optional)
   
+    
+  statePreprop: a function preprocess observation from environment to state (optional)
+    Ex: Conversion From number to Tensor
+  actPreprop: a function preprocess action from dqn:act to the form compatible with environment
+    Ex: Conversion of onehot representation to integer index representation 
 
 methods:
   learning:
@@ -73,6 +75,7 @@ function dql:learning(episode, report)
       end
     end 
   end
+  return self.dqn
 end
 
 return dql
