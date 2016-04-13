@@ -2,7 +2,7 @@ package = "dprl"
 version = "scm-1"
 
 source = {
-   url = "https://github.com/PoHsunSu/dprl.git",
+   url = "git://github.com/PoHsunSu/dprl.git",
    tag = "master"
 }
 
@@ -11,7 +11,7 @@ description = {
    detailed = [[
         Deep reinforcement learning package for torch7
    ]],
-   homepage = "https://github.com/PoHsunSu/dprl.git"
+   homepage = "https://github.com/PoHsunSu/dprl"
 }
 
 dependencies = {
