@@ -2,16 +2,16 @@ package = "dprl"
 version = "scm-1"
 
 source = {
-   url = "git://github.com/soumith/examplepackage.torch",
+   url = "https://github.com/PoHsunSu/dprl.git",
    tag = "master"
 }
 
 description = {
-   summary = "A hello-world for torch packages",
+   summary = "Deep reinforcement learning package for torch7"
    detailed = [[
-        A hello-world for torch packages
+        Deep reinforcement learning package for torch7
    ]],
-   homepage = "https://github.com/soumith/examplepackage.torch"
+   homepage = "https://github.com/PoHsunSu/dprl.git"
 }
 
 dependencies = {
