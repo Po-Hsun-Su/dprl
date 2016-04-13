@@ -7,7 +7,7 @@ source = {
 }
 
 description = {
-   summary = "Deep reinforcement learning package for torch7"
+   summary = "Deep reinforcement learning package for torch7",
    detailed = [[
         Deep reinforcement learning package for torch7
    ]],
