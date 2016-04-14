@@ -3,7 +3,7 @@ test bench for dql
 
 ]]--
 require 'rPrint'
-
+require 'optim'
 local dprl = require 'init'
 
 -- initialize environment
@@ -42,7 +42,10 @@ qnet:add(nn.Linear(hiddenSize,actionRange))
 
 -- initialize dqn
 local dqn_param = {capacity = 32, batchSize = 4, discount = 0.9, epslon = 0.1}
-local dqn = dprl.dqn(qnet,dqn_param)
+local optimConfig = {learningRate = 0.01,
+                     momentum = 0.0}
+local optimMethod = optim.rmsprop
+local dqn = dprl.dqn(qnet,dqn_param, optimMethod, optimConfig)
 -- initialize dql
 local dql_param = {step = 20, lr = 0.1, updateInterval = 8}
 local preprop = function (observation)
@@ -53,6 +56,13 @@ local actPreprop = function (action)
                       return action*oneHot2ID
                     end
 local dql = dprl.dql(dqn, env, dql_param, preprop, actPreprop)
-dql:learning(1000)
+
+local report = function(dql)
+  print(dql.dqn.Qvalue)
+end
+
+
+
+dql:learning(5000,report)
 
 

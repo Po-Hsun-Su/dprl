@@ -37,10 +37,12 @@ local classic = require 'classic'
 
 local dqn = classic.class('dqn')
 
-function dqn:_init(qnet, param)
+function dqn:_init(qnet, param, optim, optimConfig)
   self.qnet = qnet:clone()
   self.Tqnet = self.qnet:clone()
   self.param = param
+  self.optim = optim
+  self.optimConfig = optimConfig
   self.memory = {}
   self.memoryLast = 0
   self.criterion = nn.MSECriterion()
@@ -99,7 +101,7 @@ function dqn:replay(trans)
   return sampleTrans
 end
 
-function dqn:learn(sampleTrans, lr)
+function dqn:learn(sampleTrans)
   -- organize sample transitions into minibatch input
   local mbState = torch.Tensor(self.param.batchSize, sampleTrans[1].s:size(1))
   local mbTarget = torch.Tensor(self.param.batchSize)-- Target is a number
@@ -111,6 +113,41 @@ function dqn:learn(sampleTrans, lr)
   --print(mbState)
   --print('mbTarget')
   --print(mbTarget)
+  
+    
+  -- Create closure to evaluate f(x) and df/fx
+  local parameters, gradParameters = self.qnet:getParameters()
+  local feval = function(x)
+    if x ~= parameters then
+      parameters:copy(x)
+    end
+    gradParameters:zero()
+    
+    --forward
+    local Qvalue = self.qnet:forward(mbState)
+    -- select Q value to the selected action
+    local ActQvalue = torch.Tensor(self.param.batchSize)
+    for i = 1, self.param.batchSize do
+      --print('sampleTrans[i].a:byte()', sampleTrans[i].a:byte())
+      ActQvalue[i] = Qvalue[i][sampleTrans[i].a:byte()]
+    end
+    local f = self.criterion:forward(ActQvalue, mbTarget)
+    
+    -- estimate df/dW
+    local df_do = self.criterion:backward(ActQvalue, mbTarget)
+    
+    -- Assign gradient 0 to the Q value of unselected actions
+    local gradInput = torch.Tensor(Qvalue:size()):zero()
+    for i = 1, self.param.batchSize do
+      gradInput[i][sampleTrans[i].a:byte()] = df_do[i]
+    end 
+    self.qnet:backward(mbState, gradInput)
+    
+    return f, gradParameters
+  end
+  self.optim(feval, parameters, self.optimConfig)
+  
+  --[[
   -- Forward
   local Qvalue = self.qnet:forward(mbState)
   -- select Q value to the selected action
@@ -141,6 +178,7 @@ function dqn:learn(sampleTrans, lr)
   self.qnet:zeroGradParameters()
   self.qnet:backward(mbState, gradInput)
   self.qnet:updateParameters(lr)
+    ]]--
 end
 
 function dqn:update()
@@ -151,7 +189,6 @@ function dqn:act(state)
   if state:dim() == 1 then -- add minibatch dimension 
     state = state:view(1,state:size(1))
   end
-  self.state = state
   --print('state', state)
   
   if not self.action then -- initialize self.action
@@ -163,6 +200,7 @@ function dqn:act(state)
   if rand > self.param.epslon then -- greedy
     self.action = self.action:zero()
     local Qvalue = self.qnet:forward(state)
+    self.Qvalue = Qvalue:clone()
     --print('Qvalue', Qvalue)
     local maxValue, maxID = torch.max(Qvalue,2)
     --print('maxID',maxID)
