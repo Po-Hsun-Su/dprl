@@ -85,12 +85,13 @@ function dql:test(episode, visualization)
     local observation = self.env:start()
     local state = self.statePreprop(observation)
     for t = 1, self.param.step do
-      if visualization then visualization(state) end
       local action = self.dqn:act(state)
+      --print('action', action)
       local actionProp = self.actPreprop(action)
+      --print('actionProp', actionProp)
       local reward, observation, terminal = self.env:step(actionProp)
       local nextState = self.statePreprop(observation) -- assume fully observable
-      
+      if visualization then visualization(self, reward) end
       -- end of step
       state = nextState -- update state
       if terminal then
