@@ -186,11 +186,11 @@ function dqn:update()
 end
 
 function dqn:act(state)
+  self.state = state:clone()
   if state:dim() == 1 then -- add minibatch dimension 
     state = state:view(1,state:size(1))
   end
   --print('state', state)
-  
   if not self.action then -- initialize self.action
     local output = self.qnet:forward(state)
     self.action = torch.Tensor(output:size(2))
