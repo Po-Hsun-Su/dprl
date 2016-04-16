@@ -4,7 +4,7 @@ dql: Deep Q learning. It implements the training procedure in [1] using dqn.
 Inputs for initialization:
   dqn: deep Q network. See dqn.lua
   env: environment
-  param: parameters of the learning process
+  config: parameters of the learning process
     step: Max number of steps of each episode
     
   
@@ -33,10 +33,10 @@ require 'classic.torch' -- for saving/loading using torch.save/torch.load
 
 local dql = classic.class('dql')
 
-function dql:_init(dqn, env, param, statePreprop, actPreprop)
+function dql:_init(dqn, env, config, statePreprop, actPreprop)
   self.dqn = dqn
   self.env = env
-  self.param = param
+  self.config = config
   self.statePreprop = statePreprop or function(observation) return observation end
   self.actPreprop = actPreprop or function (act) return act end
 end
@@ -48,7 +48,7 @@ function dql:learning(episode, report)
     local observation = self.env:start()
     local state = self.statePreprop(observation)
     --print('init state', state)
-    for t = 1, self.param.step do 
+    for t = 1, self.config.step do 
       local action = self.dqn:act(state)
       local actionProp = self.actPreprop(action)
       --print('action', action)
@@ -62,10 +62,10 @@ function dql:learning(episode, report)
       local trans = {s = state:clone(), a = action:clone(), r = reward,
                      ns = nextState:clone(), t = terminal}
       local sampleTrans = self.dqn:replay(trans)
-      self.dqn:learn(sampleTrans, self.param.lr)
+      self.dqn:learn(sampleTrans)
       
       updateCounter = updateCounter + 1
-      if updateCounter%self.param.updateInterval == 0 then
+      if updateCounter%self.config.updateInterval == 0 then
         self.dqn:update()
       end
       -- end of step
@@ -84,7 +84,7 @@ function dql:test(episode, visualization)
     -- initialize state
     local observation = self.env:start()
     local state = self.statePreprop(observation)
-    for t = 1, self.param.step do
+    for t = 1, self.config.step do
       local action = self.dqn:act(state)
       --print('action', action)
       local actionProp = self.actPreprop(action)

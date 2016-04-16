@@ -3,7 +3,7 @@
 
 dqn requires the following inputs on construction. 
   qnet: Neural network model
-  param:
+  config:
     capacity: the capacity of replay memory
     batchSize: the size of minibatch
     discount: discount factor of reward
@@ -37,10 +37,10 @@ local classic = require 'classic'
 
 local dqn = classic.class('dqn')
 
-function dqn:_init(qnet, param, optim, optimConfig)
+function dqn:_init(qnet, config, optim, optimConfig)
   self.qnet = qnet:clone()
   self.Tqnet = self.qnet:clone()
-  self.param = param
+  self.config = config
   self.optim = optim
   self.optimConfig = optimConfig
   self.memory = {}
@@ -54,15 +54,15 @@ function dqn:replay(trans)
   --print('insert', self.memoryLast)
   self.memory[self.memoryLast] = trans
   -- remove outdated transition
-  --print('remove', self.memoryLast - self.param.capacity)
-  self.memory[self.memoryLast - self.param.capacity] = nil
+  --print('remove', self.memoryLast - self.config.capacity)
+  self.memory[self.memoryLast - self.config.capacity] = nil
   
   -- sample from memory
   local sampleTrans = {}
-  for i = 1, self.param.batchSize do
+  for i = 1, self.config.batchSize do
     -- Note #self.memory does not equal the number of transitions in menory
-    local randRange = self.param.capacity
-    if self.memoryLast < self.param.capacity then 
+    local randRange = self.config.capacity
+    if self.memoryLast < self.config.capacity then 
       randRange = self.memoryLast
     end
     local randN = math.random(randRange) - 1 
@@ -75,8 +75,8 @@ function dqn:replay(trans)
   end
   
   -- compute the target of each transition
-  local mbNextState = torch.Tensor():resize(self.param.batchSize, sampleTrans[1].ns:size(1))
-  for i = 1, self.param.batchSize do
+  local mbNextState = torch.Tensor():resize(self.config.batchSize, sampleTrans[1].ns:size(1))
+  for i = 1, self.config.batchSize do
     mbNextState[i] =  sampleTrans[i].ns
   end
   --print('mbNextState')
@@ -89,12 +89,12 @@ function dqn:replay(trans)
   --print(qValue)
   local maxQ, maxID = torch.max(qValue, 2) -- max Q of each transition 
   -- Target of each transition 
-  for i = 1, self.param.batchSize do
+  for i = 1, self.config.batchSize do
     local sam = sampleTrans[i]
     if sam.t then
       sam.y = sam.r
     else
-      sam.y = sam.r + self.param.discount*maxQ[i][1]
+      sam.y = sam.r + self.config.discount*maxQ[i][1]
     end
   end
   
@@ -103,9 +103,9 @@ end
 
 function dqn:learn(sampleTrans)
   -- organize sample transitions into minibatch input
-  local mbState = torch.Tensor(self.param.batchSize, sampleTrans[1].s:size(1))
-  local mbTarget = torch.Tensor(self.param.batchSize)-- Target is a number
-  for i = 1, self.param.batchSize do
+  local mbState = torch.Tensor(self.config.batchSize, sampleTrans[1].s:size(1))
+  local mbTarget = torch.Tensor(self.config.batchSize)-- Target is a number
+  for i = 1, self.config.batchSize do
     mbState[i] =  sampleTrans[i].s
     mbTarget[i] = sampleTrans[i].y
   end
@@ -126,8 +126,8 @@ function dqn:learn(sampleTrans)
     --forward
     local Qvalue = self.qnet:forward(mbState)
     -- select Q value to the selected action
-    local ActQvalue = torch.Tensor(self.param.batchSize)
-    for i = 1, self.param.batchSize do
+    local ActQvalue = torch.Tensor(self.config.batchSize)
+    for i = 1, self.config.batchSize do
       --print('sampleTrans[i].a:byte()', sampleTrans[i].a:byte())
       ActQvalue[i] = Qvalue[i][sampleTrans[i].a:byte()]
     end
@@ -138,7 +138,7 @@ function dqn:learn(sampleTrans)
     
     -- Assign gradient 0 to the Q value of unselected actions
     local gradInput = torch.Tensor(Qvalue:size()):zero()
-    for i = 1, self.param.batchSize do
+    for i = 1, self.config.batchSize do
       gradInput[i][sampleTrans[i].a:byte()] = df_do[i]
     end 
     self.qnet:backward(mbState, gradInput)
@@ -197,7 +197,7 @@ function dqn:act(state)
   end 
   
   local rand = math.random()
-  if rand > self.param.epslon then -- greedy
+  if rand > self.config.epslon then -- greedy
     self.action = self.action:zero()
     local Qvalue = self.qnet:forward(state)
     self.Qvalue = Qvalue:clone()
