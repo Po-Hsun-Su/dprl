@@ -37,31 +37,32 @@ dprl.dql implements algorithm 1 in [[1]](#references).
 		* updatePeriod: number of steps between successive updates of target network
 
 	* `statePreprop` (optional): a function processing observation from `env` into state for `dqn`. For example, observation is number and we need to convert it to tensor:
-	```
-	local statePreprop = function (observation)
-		return torch.Tensor(observation)
-	end
-	```
+		```
+		local statePreprop = function (observation)
+			return torch.Tensor(observation)
+		end
+		```
 
 	* `actPreprop` (optional): a function processing output of `dqn` into action for `env`. For example, `dqn` outputs action in onehot coding and we need to convert it to number index:
-	```
-	local actPreprop = function (action)
-		return action*torch.linspace(1, action:size(1), action:size(1))
-  end  
-	```
+		```
+		local actPreprop = function (action)
+			return action*torch.linspace(1, action:size(1), action:size(1))
+		end  
+		```
 
 2. Learning
-```
-dql:learning(episode, report)
-```
-parameters:
+	```
+	dql:learning(episode, report)
+	```
+	parameters:
 	* `episode`: number of training episodes
 	* `report` (optional): a function called at the end of each episode for reporting the status of training.
 
 3. Testing
-```
-dql:testing(episode, visualization)
-```
+	```
+	dql:testing(episode, visualization)
+	```
+	parameters:
 	* `episode`: number of testing episodes
 	* `visualization` (optional): a function called at the end of each step for visualization of `dqn`.
 
