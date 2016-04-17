@@ -2,13 +2,10 @@
 Deep reinforcement learning package for torch7. 
 
 Supported algorithms:
-
+* dprl.dql: Deep Q learning [[1]](#references)
 
 To be supported algorithms:
-
-* dprl.dql: Deep Q learning [[1]](#references)
 * dprl.ddpg: Deep deterministic policy gradient [[2]](#references)
-* dprl.svg 
 
 ## Installation
 
@@ -89,7 +86,7 @@ dprl.dql implements algorithm 1 in [[1]](#references).
 
 ## References
 [1] Mnih, V., et al. (2015). "Human-level control through deep reinforcement learning." Nature 518(7540): 529-533.
-
+[2] Lillicrap, T. P., et al. (2015). "Continuous control with deep reinforcement learning." CoRR abs/1509.02971.
 <!---
 ## TODO
 #### dqn, dql
