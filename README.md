@@ -22,10 +22,12 @@ luarocks make dprl-scm-1.rockspec
 dprl.dql implements algorithm 1 in [[1]](#references).
 
 1. Initialize a deep Q learning agent.
-```
-local dql = dprl.dql(dqn, env, config, statePreprop, actPreprop)
-```
-parameters:
+	```
+	local dql = dprl.dql(dqn, env, config, statePreprop, actPreprop)
+	```
+
+	parameters:
+
 	* `dqn`: a deep Q network. See [dprl.dqn](#dqn) below.
 
 	* `env`: an eviroment with interfaces following [rlenvs](https://github.com/Kaixhin/rlenvs#api).
