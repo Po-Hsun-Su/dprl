@@ -27,12 +27,14 @@ local dql = dprl.dql(dqn, env, config, statePreprop, actPreprop)
 ```
 parameters:
 	* `dqn`: a deep Q network. See [dprl.dqn](#dqn) below.
+
 	* `env`: an eviroment with interfaces following [rlenvs](https://github.com/Kaixhin/rlenvs#api).
+
 	* `config`: a table containing configurations of `dql`
 		* step: number of steps which an episode terminates
 		* updatePeriod: number of steps between successive updates of target network
-	* `statePreprop` (optional): a function processing observation from `env` into state for `dqn`. For example, observation is number and we need to convert it to tensor:
 
+	* `statePreprop` (optional): a function processing observation from `env` into state for `dqn`. For example, observation is number and we need to convert it to tensor:
 	```
 	local statePreprop = function (observation)
 		return torch.Tensor(observation)
