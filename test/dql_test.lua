@@ -47,7 +47,7 @@ local optimConfig = {learningRate = 0.01,
 local optimMethod = optim.rmsprop
 local dqn = dprl.dqn(qnet,dqn_param, optimMethod, optimConfig)
 -- initialize dql
-local dql_param = {step = 20, lr = 0.1, updateInterval = 8}
+local dql_param = {step = 20, lr = 0.1, updatePeriod = 8}
 local preprop = function (observation)
                   return torch.Tensor{observation + 1}
                 end

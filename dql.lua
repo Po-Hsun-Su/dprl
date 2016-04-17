@@ -65,7 +65,7 @@ function dql:learning(episode, report)
       self.dqn:learn(sampleTrans)
       
       updateCounter = updateCounter + 1
-      if updateCounter%self.config.updateInterval == 0 then
+      if updateCounter%self.config.updatePeriod == 0 then
         self.dqn:update()
       end
       -- end of step
