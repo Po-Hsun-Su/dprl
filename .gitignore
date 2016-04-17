@@ -9,3 +9,5 @@ Todo
 _*
 # ignore build
 build/*
+# ignore save of dql
+*.dql
