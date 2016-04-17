@@ -41,7 +41,7 @@ qnet:add(nn.Linear(hiddenSize,actionRange))
 --print(qnet:forward(torch.Tensor{{1},{2},{3},{4}})) -- test
 
 -- initialize dqn
-local dqn_param = {capacity = 32, batchSize = 4, discount = 0.9, epslon = 0.1}
+local dqn_param = {replaySize = 32, batchSize = 4, discount = 0.9, epslon = 0.1}
 local optimConfig = {learningRate = 0.01,
                      momentum = 0.0}
 local optimMethod = optim.rmsprop

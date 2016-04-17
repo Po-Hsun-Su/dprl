@@ -4,7 +4,7 @@
 dqn requires the following inputs on construction. 
   qnet: Neural network model
   config:
-    capacity: the capacity of replay memory
+    replaySize: the size of replay memory
     batchSize: the size of minibatch
     discount: discount factor of reward
     epslon: the probability of selecting random action
@@ -54,15 +54,15 @@ function dqn:replay(trans)
   --print('insert', self.memoryLast)
   self.memory[self.memoryLast] = trans
   -- remove outdated transition
-  --print('remove', self.memoryLast - self.config.capacity)
-  self.memory[self.memoryLast - self.config.capacity] = nil
+  --print('remove', self.memoryLast - self.config.replaySize)
+  self.memory[self.memoryLast - self.config.replaySize] = nil
   
   -- sample from memory
   local sampleTrans = {}
   for i = 1, self.config.batchSize do
     -- Note #self.memory does not equal the number of transitions in menory
-    local randRange = self.config.capacity
-    if self.memoryLast < self.config.capacity then 
+    local randRange = self.config.replaySize
+    if self.memoryLast < self.config.replaySize then 
       randRange = self.memoryLast
     end
     local randN = math.random(randRange) - 1 
