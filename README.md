@@ -84,7 +84,7 @@ dprl.dql implements algorithm 1 in [[1]](#references).
 	* `optim`: optimization in the [optim](https://github.com/torch/optim) package for training `qnet`. 
 	* `optimConfig`: configuration of `optim`
 
-## <a name="API"></a> API
+##<a name="API"></a>API
 
 
 ## References
