@@ -7,7 +7,7 @@ dqn requires the following inputs on construction.
     replaySize: the size of replay memory
     batchSize: the size of minibatch
     discount: discount factor of reward
-    epslon: the probability of selecting random action
+    epsilon: the probability of selecting random action
     
 dqn implements the following functions.
   replay: store a transition, sample a minibatch of transitions and compute target q value of sampled transitions
@@ -197,7 +197,7 @@ function dqn:act(state)
   end 
   
   local rand = math.random()
-  if rand > self.config.epslon then -- greedy
+  if rand > self.config.epsilon then -- greedy
     self.action = self.action:zero()
     local Qvalue = self.qnet:forward(state)
     self.Qvalue = Qvalue:clone()
