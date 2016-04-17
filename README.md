@@ -66,7 +66,7 @@ dprl.dql implements algorithm 1 in [[1]](#references).
 	* `episode`: number of testing episodes
 	* `visualization` (optional): a function called at the end of each step for visualization of `dqn`.
 
-####<a name="dqn"></a> Deep Q network (dprl.dqn)
+####<a name="dqn"></a>Deep Q network (dprl.dqn)
 `dprl.dqn` implements experience replay and trains the neural network in itself.
 
 1. Initialize `dprl.dqn`
