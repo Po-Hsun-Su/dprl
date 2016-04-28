@@ -39,6 +39,7 @@ local dqn = classic.class('dqn')
 
 function dqn:_init(qnet, config, optim, optimConfig)
   self.qnet = qnet:clone()
+  self.parameters, self.gradParameters = self.qnet:getParameters()
   self.Tqnet = self.qnet:clone()
   self.config = config
   self.optim = optim
@@ -49,6 +50,10 @@ function dqn:_init(qnet, config, optim, optimConfig)
 end
 
 function dqn:replay(trans)
+  -- convert action to ByteTensor for faster indexing while learning 
+  if trans.a:type() ~= 'torch.ByteTensor' then
+    trans.a = trans.a:byte()
+  end
   -- store transition "trans"
   self.memoryLast = self.memoryLast + 1
   --print('insert', self.memoryLast)
@@ -116,20 +121,20 @@ function dqn:learn(sampleTrans)
   
     
   -- Create closure to evaluate f(x) and df/fx
-  local parameters, gradParameters = self.qnet:getParameters()
+  
   local feval = function(x)
-    if x ~= parameters then
-      parameters:copy(x)
+    if x ~= self.parameters then
+      self.parameters:copy(x)
     end
-    gradParameters:zero()
+    self.gradParameters:zero()
     
     --forward
     local Qvalue = self.qnet:forward(mbState)
     -- select Q value to the selected action
     local ActQvalue = torch.Tensor(self.config.batchSize)
     for i = 1, self.config.batchSize do
-      --print('sampleTrans[i].a:byte()', sampleTrans[i].a:byte())
-      ActQvalue[i] = Qvalue[i][sampleTrans[i].a:byte()]
+      --print('sampleTrans[i].a', sampleTrans[i].a)
+      ActQvalue[i] = Qvalue[i][sampleTrans[i].a]
     end
     local f = self.criterion:forward(ActQvalue, mbTarget)
     
@@ -139,46 +144,14 @@ function dqn:learn(sampleTrans)
     -- Assign gradient 0 to the Q value of unselected actions
     local gradInput = torch.Tensor(Qvalue:size()):zero()
     for i = 1, self.config.batchSize do
-      gradInput[i][sampleTrans[i].a:byte()] = df_do[i]
+      gradInput[i][sampleTrans[i].a] = df_do[i]
     end 
     self.qnet:backward(mbState, gradInput)
     
-    return f, gradParameters
+    return f, self.gradParameters
   end
-  self.optim(feval, parameters, self.optimConfig)
+  self.optim(feval, self.parameters, self.optimConfig)
   
-  --[[
-  -- Forward
-  local Qvalue = self.qnet:forward(mbState)
-  -- select Q value to the selected action
-  local ActQvalue = torch.Tensor(self.param.batchSize)
-  for i = 1, self.param.batchSize do
-    --print('sampleTrans[i].a:byte()', sampleTrans[i].a:byte())
-    ActQvalue[i] = Qvalue[i][sampleTrans[i].a:byte()]
-  end
-  --print('Qvalue',Qvalue)
-  --print('ActQvalue',ActQvalue)
-  
-  local criterionOutput = self.criterion:forward(ActQvalue, mbTarget)
-  --print('criterionOutput')
-  --print(criterionOutput)
-  
-  -- Backward
-  local criterionBackward = self.criterion:backward(ActQvalue, mbTarget)
-  --print('criterionBackward')
-  --print(criterionBackward)
-  
-  -- Assign gradient 0 to the Q value of unselected actions
-  local gradInput = torch.Tensor(Qvalue:size()):zero()
-  for i = 1, self.param.batchSize do
-    gradInput[i][sampleTrans[i].a:byte()] = criterionBackward[i]
-  end 
-  --print('gradInput')
-  --print(gradInput)
-  self.qnet:zeroGradParameters()
-  self.qnet:backward(mbState, gradInput)
-  self.qnet:updateParameters(lr)
-    ]]--
 end
 
 function dqn:update()
