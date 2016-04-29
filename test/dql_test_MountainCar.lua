@@ -41,8 +41,8 @@ local optimConfig = {learningRate = 0.01,
                      momentum = 0.0}
 local optimMethod = optim.rmsprop
 
-local dqn_param = {replaySize = 256, batchSize = 16, discount = 0.99, epsilon = 0.1}
-local dqn = dprl.dqn(qnet, dqn_param, optimMethod, optimConfig)
+local dqn_param = {replaySize = 256, batchSize = 16, discount = 0.99, epsilon = 0.05}
+local dqn = dprl.ddqn(qnet, dqn_param, optimMethod, optimConfig)
 -- initialize dql
 local dql_param = {step = 256, lr = 0.01, updatePeriod = 64}
 
