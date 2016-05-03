@@ -48,8 +48,7 @@ function dqn:_init(qnet, config, optim, optimConfig)
   self.memoryLast = 0
   self.criterion = nn.MSECriterion()
 end
-
-function dqn:replay(trans)
+function dqn:store(trans)
   -- convert action to ByteTensor for faster indexing while learning 
   if trans.a:type() ~= 'torch.ByteTensor' then
     trans.a = trans.a:byte()
@@ -61,8 +60,9 @@ function dqn:replay(trans)
   -- remove outdated transition
   --print('remove', self.memoryLast - self.config.replaySize)
   self.memory[self.memoryLast - self.config.replaySize] = nil
-  
-  -- sample from memory
+end
+
+function dqn:sample()
   local sampleTrans = {}
   for i = 1, self.config.batchSize do
     -- Note #self.memory does not equal the number of transitions in menory
@@ -77,8 +77,11 @@ function dqn:replay(trans)
     --print('sample ID')
     --print(self.memoryLast - randN)
     sampleTrans[i] = self.memory[self.memoryLast - randN]
-  end
-  
+  end 
+  return sampleTrans
+end
+
+function dqn:setTarget(sampleTrans)
   -- compute the target of each transition
   local mbNextState = torch.Tensor():resize(self.config.batchSize, sampleTrans[1].ns:size(1))
   for i = 1, self.config.batchSize do
@@ -102,7 +105,16 @@ function dqn:replay(trans)
       sam.y = sam.r + self.config.discount*maxQ[i][1]
     end
   end
-  
+  return sampleTrans
+end
+
+function dqn:replay(trans)
+  -- store transition
+  self:store(trans)
+  -- sample from memory
+  local sampleTrans = self:sample()
+  -- set target
+  sampleTrans = self:setTarget(sampleTrans)
   return sampleTrans
 end
 
