@@ -10,37 +10,8 @@ function ddqn:_init(qnet, config, optim, optimConfig)
   super._init(self, qnet, config, optim, optimConfig)
 end
 
--- override method replay
-function ddqn:replay(trans)
-  -- convert action to ByteTensor for faster indexing while learning 
-  if trans.a:type() ~= 'torch.ByteTensor' then
-    trans.a = trans.a:byte()
-  end
-  -- store transition "trans"
-  self.memoryLast = self.memoryLast + 1
-  --print('insert', self.memoryLast)
-  self.memory[self.memoryLast] = trans
-  -- remove outdated transition
-  --print('remove', self.memoryLast - self.config.replaySize)
-  self.memory[self.memoryLast - self.config.replaySize] = nil
-  
-  -- sample from memory
-  local sampleTrans = {}
-  for i = 1, self.config.batchSize do
-    -- Note #self.memory does not equal the number of transitions in menory
-    local randRange = self.config.replaySize
-    if self.memoryLast < self.config.replaySize then 
-      randRange = self.memoryLast
-    end
-    local randN = math.random(randRange) - 1 
-    --print('randN', randN)
-    --print('self.memory')
-    --rPrint(self.memory)
-    --print('sample ID')
-    --print(self.memoryLast - randN)
-    sampleTrans[i] = self.memory[self.memoryLast - randN]
-  end
-  
+
+function ddqn:setTarget(sampleTrans)
   -- compute the target of each transition
   local mbNextState = torch.Tensor():resize(self.config.batchSize, sampleTrans[1].ns:size(1))
   for i = 1, self.config.batchSize do
@@ -75,6 +46,5 @@ function ddqn:replay(trans)
   
   return sampleTrans
 end
-
 
 return ddqn
