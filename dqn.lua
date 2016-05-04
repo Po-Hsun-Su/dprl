@@ -113,8 +113,7 @@ function dqn:replay(trans)
   self:store(trans)
   -- sample from memory
   local sampleTrans = self:sample()
-  -- set target
-  sampleTrans = self:setTarget(sampleTrans)
+    
   return sampleTrans
 end
 
@@ -131,7 +130,6 @@ function dqn:learn(sampleTrans)
   --print('mbTarget')
   --print(mbTarget)
   
-    
   -- Create closure to evaluate f(x) and df/fx
   
   local feval = function(x)
