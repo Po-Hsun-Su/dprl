@@ -62,6 +62,7 @@ function dql:learning(episode, report)
       local trans = {s = state:clone(), a = action:clone(), r = reward,
                      ns = nextState:clone(), t = terminal}
       local sampleTrans = self.dqn:replay(trans)
+      sampleTrans = self.dqn:setTarget(sampleTrans)
       self.dqn:learn(sampleTrans)
       
       updateCounter = updateCounter + 1
