@@ -113,11 +113,15 @@ function dqn:replay(trans)
   self:store(trans)
   -- sample from memory
   local sampleTrans = self:sample()
-    
+  
+  
   return sampleTrans
 end
 
 function dqn:learn(sampleTrans)
+  -- set target
+  sampleTrans = self:setTarget(sampleTrans)
+ 
   -- organize sample transitions into minibatch input
   local mbState = torch.Tensor(self.config.batchSize, sampleTrans[1].s:size(1))
   local mbTarget = torch.Tensor(self.config.batchSize)-- Target is a number
@@ -130,6 +134,7 @@ function dqn:learn(sampleTrans)
   --print('mbTarget')
   --print(mbTarget)
   
+    
   -- Create closure to evaluate f(x) and df/fx
   
   local feval = function(x)
