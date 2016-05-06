@@ -19,8 +19,8 @@ local qnet = nn.Sequential():add(qnetShare):add(qnetHead)
 local optimConfig = {learningRate = 0.01,
                      momentum = 0.0}
 local optimMethod = optim.rmsprop
-local dqn_param = {replaySize = 1096, batchSize = 4, discount = 0.99, epsilon = 0.2}
-local bdqntest = dprl.bdqn(qnet, headNum, dqn_param, optimMethod, optimConfig)
+local dqn_param = {replaySize = 1096, batchSize = 4, discount = 0.99, epsilon = 0.2, headNum = headNum}
+local bdqntest = dprl.bdqn(qnet, dqn_param, optimMethod, optimConfig)
 print('-----test replay-----')
 for i = 1, 10 do
   --print('iter', i)

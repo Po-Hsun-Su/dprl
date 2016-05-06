@@ -8,12 +8,10 @@ local classic = require 'classic'
 local ddqn = require 'ddqn'
 local bdqn, super = classic.class('bdqn', ddqn)
 
-function bdqn:_init(qnet, headNum, config, optim, optimConfig)
-  self.headNum =headNum
-  self.allActive = {}
-  for i = 1, self.headNum do self.allActive[i] = i end
+function bdqn:_init(qnet, config, optim, optimConfig)
   super._init(self, qnet, config, optim, optimConfig)
-  
+  self.allActive = {}
+  for i = 1, self.config.headNum do self.allActive[i] = i end
 end
 
 function bdqn:act(state, active)
@@ -55,7 +53,7 @@ function bdqn:setTarget(sampleTrans)
   local qValue = self.Tqnet:forward(mbNextState)
   
   -- target of each transition of each head
-  for k = 1, self.headNum do
+  for k = 1, self.config.headNum do
     local maxQ, maxID = torch.max(qValue[k], 2) -- max Q of each transition 
     -- Target of each transition
     for i = 1, self.config.batchSize do
@@ -79,12 +77,12 @@ function bdqn:learn(sampleTrans)
   -- organize sample transitions into minibatch input
   local mbState = torch.Tensor(self.config.batchSize, sampleTrans[1].s:size(1))
   local mbTarget = {}
-  for k = 1, self.headNum do
+  for k = 1, self.config.headNum do
     mbTarget[k] = torch.Tensor(self.config.batchSize)-- Target is a number
   end
   for i = 1, self.config.batchSize do
     mbState[i] =  sampleTrans[i].s
-    for k = 1, self.headNum do
+    for k = 1, self.config.headNum do
       mbTarget[k][i] = sampleTrans[i].y[k]
     end
   end
