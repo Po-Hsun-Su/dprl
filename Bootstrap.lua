@@ -26,17 +26,17 @@ function Bootstrap:__init(module, headNum, param_init)
     self.headNum = headNum
     self.active = {}
     self.param_init = param_init or 0.1
-    --print(module)
     self.module = module:clearState()
     self.heads = {}
     self.heads_container = nn.Container()
     self.train = true
-    
+
     -- initialize heads 
     for k=1,self.headNum do
         if self.param_init then
             -- By default nn.Linear multiplies with math.sqrt(3)
-            self.heads[k] = self.module:clone():reset(self.param_init / math.sqrt(3))
+            self.heads[k] = self.module:clone()
+            self.heads[k]:reset(self.param_init / math.sqrt(3))
         else    
             self.heads[k] = self.module:clone():reset()
         end
