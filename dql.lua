@@ -47,6 +47,7 @@ function dql:learning(episode, report)
     -- initialize state
     local observation = self.env:start()
     local state = self.statePreprop(observation)
+    local totalReward = 0
     --print('init state', state)
     for t = 1, self.config.step do 
       local action = self.dqn:act(state)
@@ -54,6 +55,7 @@ function dql:learning(episode, report)
       --print('action', action)
       --print('actionProp', actionProp)
       local reward, observation, terminal = self.env:step(actionProp)
+      totalReward = totalReward + reward
       --print('reward', reward)
       --print('terminal', terminal)
       local nextState = self.statePreprop(observation) -- assume fully observable
@@ -74,7 +76,7 @@ function dql:learning(episode, report)
         break
       end
     end
-    if report then report(self) end
+    if report then report(self, totalReward) end
   end
   return self.dqn
 end
