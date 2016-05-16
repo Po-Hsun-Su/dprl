@@ -38,7 +38,8 @@ function Bootstrap:__init(module, headNum, param_init)
             self.heads[k] = self.module:clone()
             self.heads[k]:reset(self.param_init / math.sqrt(3))
         else    
-            self.heads[k] = self.module:clone():reset()
+            self.heads[k] = self.module:clone()
+            self.heads[k]:reset()
         end
         self.heads_container:add(self.heads[k])
     end
