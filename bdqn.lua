@@ -50,7 +50,9 @@ function bdqn:setTarget(sampleTrans)
     sampleTrans[i].y = {} -- initialize target storage
   end
   self.Tqnet:setActiveHead(self.allActive)
-  local qValue = self.Tqnet:forward(mbNextState)
+  self.qnet:setActiveHead(self.allActive)
+  local TqValue = self.Tqnet:forward(mbNextState)
+  local qValue = self.qnet:forward(mbNextState)
   
   -- target of each transition of each head
   for k = 1, self.config.headNum do
@@ -61,7 +63,7 @@ function bdqn:setTarget(sampleTrans)
       if sam.t then
         sam.y[k] = sam.r
       else
-        sam.y[k] = sam.r + self.config.discount*maxQ[i][1]
+        sam.y[k] = sam.r + self.config.discount*TqValue[k][i][maxID[i][1]]
       end
     end
   end
