@@ -47,7 +47,6 @@ function dqn:_init(qnet, config, optim, optimConfig)
   self.memory = {}
   self.memoryLast = 0
   self.criterion = nn.MSECriterion()
-  self.criterion.sizeAverage = false
 end
 function dqn:store(trans)
   -- convert action to ByteTensor for faster indexing while learning 

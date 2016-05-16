@@ -30,11 +30,11 @@ function bdqn:act(state, active)
   
   self.action = self.action:zero()
   
-  print('state', state)
-  print(self.qnet)
+  --print('state', state)
+  --print(self.qnet)
   local Qvalue = self.qnet:forward(state)
   self.Qvalue = Qvalue:clone()
-  print('Qvalue', Qvalue)
+  --print('Qvalue', Qvalue)
   local maxValue, maxID = torch.max(Qvalue,2)
   --print('maxID',maxID)
   self.action[maxID[1][1]] = 1
@@ -76,20 +76,14 @@ function bdqn:learn(sampleTrans)
   
   -- organize sample transitions into minibatch input
   local mbState = torch.Tensor(self.config.batchSize, sampleTrans[1].s:size(1))
-  local mbTarget = {}
-  for k = 1, self.config.headNum do
-    mbTarget[k] = torch.Tensor(self.config.batchSize)-- Target is a number
-  end
+
   for i = 1, self.config.batchSize do
     mbState[i] =  sampleTrans[i].s
-    for k = 1, self.config.headNum do
-      mbTarget[k][i] = sampleTrans[i].y[k]
-    end
   end
   --print('--------mbState---------')
   --print(mbState)
-  print('--------mbTarget---------')
-  rPrint(mbTarget)
+  --print('--------mbTarget---------')
+  --rPrint(mbTarget)
   
   self.qnet:setActiveHead(self.allActive)
   -- Create closure to evaluate f(x) and df/fx
@@ -107,31 +101,31 @@ function bdqn:learn(sampleTrans)
     local gradInput = {}
     local f = 0
     for k = 1, #self.allActive do
-      ActQvalue[k] = torch.Tensor(self.config.batchSize)
+    
+      local mbTargetPad = Qvalue[k]:clone()
       for i = 1, self.config.batchSize do
-
-        ActQvalue[k][i] = Qvalue[k][i][sampleTrans[i].a]
+        mbTargetPad[i][sampleTrans[i].a] = sampleTrans[i].y[k]
       end
+      --print('mbTargetPad',mbTargetPad)
+      --print('Qvalue[k]',Qvalue[k])
+      f = self.criterion:forward(Qvalue[k], mbTargetPad)
+      gradInput[k] = self.criterion:backward(Qvalue[k], mbTargetPad):clone()
+      --gradInput[k] = gradInput[k]*Qvalue[k]:size(2)
+      --print('gradInput[k]',gradInput[k])
       
-      f = self.criterion:forward(ActQvalue[k], mbTarget[k])
-      -- estimate df/dW
-      local df_do = self.criterion:backward(ActQvalue[k], mbTarget[k])
-      
-      gradInput[k] = torch.Tensor(Qvalue[k]:size()):zero()
-      for i = 1, self.config.batchSize do
-        gradInput[k][i][sampleTrans[i].a] = df_do[i]
-      end 
+      --print('--------gradInput---------')
+      --rPrint(gradInput)
+      --print('--------Qvalue---------')
+      --rPrint(Qvalue)
+      --io.read()
     end
-    --print('--------gradInput---------')
-    --rPrint(gradInput)
-    print('--------Qvalue---------')
-    rPrint(Qvalue)
     
     f = f/#self.allActive
     self.qnet:backward(mbState, gradInput)
     
     return f, self.gradParameters
   end
+  --rPrint(self.optimConfig.learningRate)
   self.optim(feval, self.parameters, self.optimConfig)
 end
 
