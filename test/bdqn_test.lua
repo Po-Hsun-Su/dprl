@@ -11,7 +11,7 @@ local outputDim = 2
 local qnetShare = nn.Linear(inputDim,hiddenDim)
 
 local headNum = 2
-local param_init = 0.1
+local param_init = 0.5
 local qnetHead = nn.Bootstrap(nn.Linear(hiddenDim,outputDim), headNum, param_init)
 local qnet = nn.Sequential():add(qnetShare):add(qnetHead)
 
