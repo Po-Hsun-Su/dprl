@@ -112,10 +112,7 @@ function dqn:replay(trans)
   -- store transition
   self:store(trans)
   -- sample from memory
-  local sampleTrans = self:sample()
-  
-  
-  return sampleTrans
+  return self:sample() 
 end
 
 function dqn:learn(sampleTrans)
