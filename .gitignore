@@ -11,3 +11,9 @@ _*
 build/*
 # ignore save of dql
 *.dql
+
+# other files
+Todo.md
+plot/
+results/
+tool/
