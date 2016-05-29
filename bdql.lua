@@ -27,7 +27,7 @@ function bdql:learning(episode, report)
     local Qvalues = {}
     states[1] = observation
     --print('init state', state)
-    local stepsTaken = 0
+    local stepsTaken = self.config.step
     for t = 1, self.config.step do 
       local action = self.dqn:act(state, active)
       local actionProp = self.actPreprop(action)
@@ -45,15 +45,6 @@ function bdql:learning(episode, report)
       local trans = {s = state:clone(), a = action:clone(), r = reward,
                      ns = nextState:clone(), t = terminal}
       self.dqn:store(trans)
-      --[[
-      local sampleTrans = self.dqn:sample()
-      self.dqn:learn(sampleTrans)
-      
-      updateCounter = updateCounter + 1
-      if updateCounter%self.config.updatePeriod == 0 then
-        self.dqn:update()
-      end
-      ]]--
       -- end of step
       state = nextState -- update state
       if terminal then
@@ -76,5 +67,7 @@ function bdql:learning(episode, report)
   end
   return self.dqn
 end
+function bdql:test(episode, report)
 
+end
 return bdql
