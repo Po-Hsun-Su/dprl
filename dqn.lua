@@ -83,7 +83,8 @@ end
 
 function dqn:setTarget(sampleTrans)
   -- compute the target of each transition
-  local mbNextState = torch.Tensor():resize(self.config.batchSize, sampleTrans[1].ns:size(1))
+
+  local mbNextState = torch.Tensor():resize(self.config.batchSize, unpack(sampleTrans[1].ns:size():totable()))
   for i = 1, self.config.batchSize do
     mbNextState[i] =  sampleTrans[i].ns
   end
@@ -120,7 +121,7 @@ function dqn:learn(sampleTrans)
   sampleTrans = self:setTarget(sampleTrans)
  
   -- organize sample transitions into minibatch input
-  local mbState = torch.Tensor(self.config.batchSize, sampleTrans[1].s:size(1))
+  local mbState = torch.Tensor(self.config.batchSize, unpack(sampleTrans[1].s:size():totable()))
   local mbTarget = torch.Tensor(self.config.batchSize)-- Target is a number
   for i = 1, self.config.batchSize do
     mbState[i] =  sampleTrans[i].s
@@ -172,12 +173,13 @@ end
 
 function dqn:act(state)
   self.state = state:clone()
-  if state:dim() == 1 then -- add minibatch dimension 
-    state = state:view(1,state:size(1))
-  end
+  -- add minibatch dimension 
+  state = state:view(1,unpack(state:size():totable()))
+
   --print('state', state)
   if not self.action then -- initialize self.action
     local output = self.qnet:forward(state)
+    --print('output',output)
     self.action = torch.Tensor(output:size(2))
   end 
   
