@@ -49,7 +49,7 @@ function dql:learning(episode, report)
     local state = self.statePreprop(observation)
     local totalReward = 0
     --print('init state', state)
-    for t = 1, self.config.step do 
+    for t = 1, self.config.step do
       local action = self.dqn:act(state)
       local actionProp = self.actPreprop(action)
       --print('action', action)

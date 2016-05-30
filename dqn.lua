@@ -46,7 +46,11 @@ function dqn:_init(qnet, config, optim, optimConfig)
   self.optimConfig = optimConfig
   self.memory = {}
   self.memoryLast = 0
-  self.criterion = nn.MSECriterion()
+  if self.parameters:type() == 'torch.CudaTensor' then
+    self.criterion = nn.MSECriterion():cuda()
+  else
+    self.criterion = nn.MSECriterion()
+  end
 end
 function dqn:store(trans)
   -- convert action to ByteTensor for faster indexing while learning 
@@ -121,8 +125,15 @@ function dqn:learn(sampleTrans)
   sampleTrans = self:setTarget(sampleTrans)
  
   -- organize sample transitions into minibatch input
-  local mbState = torch.Tensor(self.config.batchSize, unpack(sampleTrans[1].s:size():totable()))
-  local mbTarget = torch.Tensor(self.config.batchSize)-- Target is a number
+  local mbState, mbTarget, cuda
+  if sampleTrans[1].s:type() == 'torch.CudaTensor' then
+    mbState = torch.CudaTensor(self.config.batchSize, unpack(sampleTrans[1].s:size():totable()))
+    mbTarget = torch.CudaTensor(self.config.batchSize)-- Target is a number
+    cuda = true
+  else
+    mbState = torch.Tensor(self.config.batchSize, unpack(sampleTrans[1].s:size():totable()))
+    mbTarget = torch.Tensor(self.config.batchSize)-- Target is a number
+  end
   for i = 1, self.config.batchSize do
     mbState[i] =  sampleTrans[i].s
     mbTarget[i] = sampleTrans[i].y
@@ -144,7 +155,12 @@ function dqn:learn(sampleTrans)
     --forward
     local Qvalue = self.qnet:forward(mbState)
     -- select Q value to the selected action
-    local ActQvalue = torch.Tensor(self.config.batchSize)
+    local ActQvalue
+    if cuda then
+      ActQvalue = torch.CudaTensor(self.config.batchSize)
+    else
+      ActQvalue = torch.Tensor(self.config.batchSize)
+    end
     for i = 1, self.config.batchSize do
       --print('sampleTrans[i].a', sampleTrans[i].a)
       ActQvalue[i] = Qvalue[i][sampleTrans[i].a]
@@ -155,7 +171,12 @@ function dqn:learn(sampleTrans)
     local df_do = self.criterion:backward(ActQvalue, mbTarget)
     
     -- Assign gradient 0 to the Q value of unselected actions
-    local gradInput = torch.Tensor(Qvalue:size()):zero()
+    local gradInput
+    if cuda then
+      gradInput = torch.CudaTensor(Qvalue:size()):zero()
+    else
+      gradInput = torch.Tensor(Qvalue:size()):zero()
+    end
     for i = 1, self.config.batchSize do
       gradInput[i][sampleTrans[i].a] = df_do[i]
     end 
@@ -175,7 +196,7 @@ function dqn:act(state)
   self.state = state:clone()
   -- add minibatch dimension 
   state = state:view(1,unpack(state:size():totable()))
-
+  
   --print('state', state)
   if not self.action then -- initialize self.action
     local output = self.qnet:forward(state)
