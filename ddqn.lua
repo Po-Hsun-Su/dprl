@@ -13,7 +13,7 @@ end
 
 function ddqn:setTarget(sampleTrans)
   -- compute the target of each transition
-  local mbNextState = torch.Tensor():resize(self.config.batchSize, sampleTrans[1].ns:size(1))
+  local mbNextState = torch.Tensor():resize(self.config.batchSize, unpack(sampleTrans[1].ns:size():totable()))
   for i = 1, self.config.batchSize do
     mbNextState[i] =  sampleTrans[i].ns
   end
