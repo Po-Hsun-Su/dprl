@@ -32,10 +32,10 @@ qnet:add(nn.ReLU(true))
 qnet:add(nn.View(-1):setNumInputDims(3))
 
 local convOutputSize = qnet:forward(torch.Tensor(1,stateSpec[2][1],stateSpec[2][2],stateSpec[2][3])):size():totable()
-local hiddenSize = 8
-qnet:add(nn.Linear(torch.prod(torch.Tensor(convOutputSize)), hiddenSize))
-qnet:add(nn.ReLU(true))
-qnet:add(nn.Linear(hiddenSize, actionRange))
+--local hiddenSize = 8
+qnet:add(nn.Linear(torch.prod(torch.Tensor(convOutputSize)), actionRange))
+--qnet:add(nn.ReLU(true))
+--qnet:add(nn.Linear(hiddenSize, actionRange))
 local cuda = false
 if cuda then
   require 'cunn'
@@ -44,12 +44,12 @@ end
 --print(qnet:forward(torch.zeros(1,stateSpec[2][1],stateSpec[2][2],stateSpec[2][3]):cuda()))
 -- initialize dqn
 local optimConfig = {learningRate = 0.01,
-                     momentum = 0.0}
+                     momentum = 0.99}
 local optimMethod = optim.rmsprop
-local dqn_param = {replaySize = 1024, batchSize = 16, discount = 0.99, epsilon = 0.1}
-local dqn = dprl.ddqn(qnet,dqn_param, optimMethod, optimConfig)
+local dqn_param = {replaySize = 1e5, batchSize = 32, discount = 0.99, epsilon = 0.1}
+local dqn = dprl.dqn(qnet,dqn_param, optimMethod, optimConfig)
 -- initialize dql
-local dql_param = {step = 128, lr = 0.01, updatePeriod = 200}
+local dql_param = {step = 128, lr = 0.01, updatePeriod = 2000}
 
 local envSize = stateSpec[2][2]
 local linspace = torch.linspace(1, envSize, envSize):reshape(envSize,1)
@@ -64,16 +64,29 @@ local preprop = function (observation)
 local oneHot2ID = torch.linspace(actionSpec[3][1], actionSpec[3][2], actionRange)
 local actPreprop = function (action)
                       return action*oneHot2ID
-                    end                    
-local report = function(dql_test, totalReward)
-                 print('totalReward',totalReward)           
-               end
+                    end
+local report
+if qt then
+  local window = image.display({image=torch.zeros(1,env.size, env.size), zoom=20})
+  report = function(dql_test, totalReward, initQvalue)
+    local observation = dql_test.dqn.state:view(1,env.size, env.size)
+    image.display({image=observation, zoom=20, win=window})
+    print('totalReward',totalReward)   
+    print('initQvalue',initQvalue)          
+  end
+else        
+  report = function(dql_test, totalReward, initQvalue)
+    print('totalReward',totalReward)   
+    print('initQvalue',initQvalue)          
+  end
+end
 local dql = dprl.dql(dqn, env, dql_param, preprop, actPreprop)
 print('initial exploration')
 optimConfig.learningRate = 0
 dqn_param.epsilon = 1
 dql:learning(100,report)
 print('Learning begain')
+optimConfig.learningRate = 0.01
 local epsilonDecay = 0.5
 for i = 1, 100 do
   dqn_param.epsilon = dqn_param.epsilon*epsilonDecay
