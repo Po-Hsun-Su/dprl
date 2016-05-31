@@ -48,6 +48,7 @@ function dql:learning(episode, report)
     local observation = self.env:start()
     local state = self.statePreprop(observation)
     local totalReward = 0
+    local initQvalue = self.dqn.qnet:forward(state:view(1,unpack(state:size():totable()))):clone()
     --print('init state', state)
     for t = 1, self.config.step do
       local action = self.dqn:act(state)
@@ -76,7 +77,7 @@ function dql:learning(episode, report)
         break
       end
     end
-    if report then report(self, totalReward) end
+    if report then report(self, totalReward, initQvalue) end
   end
   return self.dqn
 end
