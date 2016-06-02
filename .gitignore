@@ -11,9 +11,12 @@ _*
 build/*
 # ignore save of dql
 *.dql
+# ignore .t7
+*.t7
 
 # other files
 Todo.md
 plot/
 results/
 tool/
+logs/
