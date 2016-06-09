@@ -34,7 +34,7 @@ dqn implements the following functions.
     output: action (Onehot representation)
 ]]--
 local classic = require 'classic'
-
+local memory = require 'memory'
 local dqn = classic.class('dqn')
 
 function dqn:_init(qnet, config, optim, optimConfig)
@@ -44,8 +44,8 @@ function dqn:_init(qnet, config, optim, optimConfig)
   self.config = config
   self.optim = optim
   self.optimConfig = optimConfig
-  self.memory = {}
-  self.memoryLast = 0
+  self.memory = memory(self.config.replaySize)
+  
   if self.parameters:type() == 'torch.CudaTensor' then
     self.criterion = nn.MSECriterion():cuda()
   else
@@ -58,40 +58,18 @@ function dqn:store(trans)
     trans.a = trans.a:byte()
   end
   -- store transition "trans"
-  self.memoryLast = self.memoryLast + 1
-  --print('insert', self.memoryLast)
-  self.memory[self.memoryLast] = trans
-  -- remove outdated transition
-  --print('remove', self.memoryLast - self.config.replaySize)
-  self.memory[self.memoryLast - self.config.replaySize] = nil
+  self.memory:store(trans)
 end
 
 function dqn:sample()
-  local sampleTrans = {}
-  for i = 1, self.config.batchSize do
-    -- Note #self.memory does not equal the number of transitions in menory
-    local randRange = self.config.replaySize
-    if self.memoryLast < self.config.replaySize then 
-      randRange = self.memoryLast
-    end
-    local randN = math.random(randRange) - 1 
-    --print('randN', randN)
-    --print('self.memory')
-    --rPrint(self.memory)
-    --print('sample ID')
-    --print(self.memoryLast - randN)
-    sampleTrans[i] = self.memory[self.memoryLast - randN]
-  end 
-  return sampleTrans
+  return self.memory:sample(self.config.batchSize)
 end
 
 function dqn:setTarget(sampleTrans)
   -- compute the target of each transition
 
-  local mbNextState = torch.Tensor():resize(self.config.batchSize, unpack(sampleTrans[1].ns:size():totable()))
-  for i = 1, self.config.batchSize do
-    mbNextState[i] =  sampleTrans[i].ns
-  end
+  local mbNextState = sampleTrans.ns
+
   --print('mbNextState')
   --print(mbNextState)
   -- cascade next states
@@ -100,16 +78,12 @@ function dqn:setTarget(sampleTrans)
   local qValue = self.Tqnet:forward(mbNextState)
   --print('qValue')
   --print(qValue)
-  local maxQ, maxID = torch.max(qValue, 2) -- max Q of each transition 
-  -- Target of each transition 
-  for i = 1, self.config.batchSize do
-    local sam = sampleTrans[i]
-    if sam.t then
-      sam.y = sam.r
-    else
-      sam.y = sam.r + self.config.discount*maxQ[i][1]
-    end
-  end
+  local maxQ, maxID = torch.max(qValue, 2) -- max Q of each transition
+
+  -- Target of each transition
+  -- Value in sampleTrans.t is 0 at terminal state. Otherwise, its value is 1.   
+  sampleTrans.y = sampleTrans.r + self.config.discount*maxQ:cmul(sampleTrans.t)
+  
   return sampleTrans
 end
 
@@ -125,19 +99,9 @@ function dqn:learn(sampleTrans)
   sampleTrans = self:setTarget(sampleTrans)
  
   -- organize sample transitions into minibatch input
-  local mbState, mbTarget, cuda
-  if sampleTrans[1].s:type() == 'torch.CudaTensor' then
-    mbState = torch.CudaTensor(self.config.batchSize, unpack(sampleTrans[1].s:size():totable()))
-    mbTarget = torch.CudaTensor(self.config.batchSize)-- Target is a number
-    cuda = true
-  else
-    mbState = torch.Tensor(self.config.batchSize, unpack(sampleTrans[1].s:size():totable()))
-    mbTarget = torch.Tensor(self.config.batchSize)-- Target is a number
-  end
-  for i = 1, self.config.batchSize do
-    mbState[i] =  sampleTrans[i].s
-    mbTarget[i] = sampleTrans[i].y
-  end
+  local mbState = sampleTrans.s
+  local mbTarget = sampleTrans.y
+
   --print('mbState')
   --print(mbState)
   --print('mbTarget')
@@ -155,31 +119,18 @@ function dqn:learn(sampleTrans)
     --forward
     local Qvalue = self.qnet:forward(mbState)
     -- select Q value to the selected action
-    local ActQvalue
-    if cuda then
-      ActQvalue = torch.CudaTensor(self.config.batchSize)
-    else
-      ActQvalue = torch.Tensor(self.config.batchSize)
-    end
-    for i = 1, self.config.batchSize do
-      --print('sampleTrans[i].a', sampleTrans[i].a)
-      ActQvalue[i] = Qvalue[i][sampleTrans[i].a]
-    end
+    local ActQvalue = Qvalue[sampleTrans.a]
+   
     local f = self.criterion:forward(ActQvalue, mbTarget)
     
     -- estimate df/dW
     local df_do = self.criterion:backward(ActQvalue, mbTarget)
     
     -- Assign gradient 0 to the Q value of unselected actions
-    local gradInput
-    if cuda then
-      gradInput = torch.CudaTensor(Qvalue:size()):zero()
-    else
-      gradInput = torch.Tensor(Qvalue:size()):zero()
-    end
-    for i = 1, self.config.batchSize do
-      gradInput[i][sampleTrans[i].a] = df_do[i]
-    end 
+    local gradInput = torch.Tensor():typeAs(Qvalue):resize(Qvalue:size()):zero()
+
+    gradInput[sampleTrans.a] = df_do
+    
     self.qnet:backward(mbState, gradInput)
     
     return f, self.gradParameters
@@ -193,14 +144,13 @@ function dqn:update()
 end
 
 function dqn:act(state)
-  self.state = state:clone()
+
   -- add minibatch dimension 
   state = state:view(1,unpack(state:size():totable()))
   
   --print('state', state)
   if not self.action then -- initialize self.action
     local output = self.qnet:forward(state)
-    --print('output',output)
     self.action = torch.Tensor(output:size(2))
   end 
   
@@ -208,7 +158,6 @@ function dqn:act(state)
   if rand > self.config.epsilon then -- greedy
     self.action = self.action:zero()
     local Qvalue = self.qnet:forward(state)
-    self.Qvalue = Qvalue:clone()
     --print('Qvalue', Qvalue)
     local maxValue, maxID = torch.max(Qvalue,2)
     --print('maxID',maxID)
@@ -216,9 +165,7 @@ function dqn:act(state)
   else -- random action
     self.action = self.action:zero()
     local dim = self.action:size(1)
-    local randID = math.random(dim)
-    --print('randID',randID)
-    self.action[randID] = 1
+    self.action[math.random(dim)] = 1
   end
   return self.action
 end

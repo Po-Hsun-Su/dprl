@@ -13,16 +13,8 @@ end
 
 function ddqn:setTarget(sampleTrans)
   -- compute the target of each transition
-  local mbNextState
-  if sampleTrans[1].ns:type() == 'torch.CudaTensor' then
-    mbNextState = torch.CudaTensor():resize(self.config.batchSize, unpack(sampleTrans[1].ns:size():totable()))
-  else 
-    mbNextState = torch.Tensor():resize(self.config.batchSize, unpack(sampleTrans[1].ns:size():totable()))
-  end
-  
-  for i = 1, self.config.batchSize do
-    mbNextState[i] =  sampleTrans[i].ns
-  end
+  local mbNextState = sampleTrans.ns
+
   --print('mbNextState')
   --print(mbNextState)
   -- cascade next states
@@ -38,17 +30,8 @@ function ddqn:setTarget(sampleTrans)
   local maxQ, maxID = torch.max(qValue, 2) -- max Q of each transition 
   --print('maxID')
   --print(maxID)
-  
-  -- Target of each transition 
-  for i = 1, self.config.batchSize do
-    local sam = sampleTrans[i]
-    if sam.t then
-      sam.y = sam.r
-    else
-      -- evaluate value with target action value function
-      sam.y = sam.r + self.config.discount*TqValue[i][maxID[i][1]]
-    end
-  end
+  local TmaxQ = TqValue:gather(2,maxID)
+  sampleTrans.y = sampleTrans.r + self.config.discount*TmaxQ:cmul(sampleTrans.t)
   
   return sampleTrans
 end
