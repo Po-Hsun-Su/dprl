@@ -53,9 +53,8 @@ function dqn:_init(qnet, config, optim, optimConfig)
   end
 end
 function dqn:store(trans)
-  -- convert action to ByteTensor for faster indexing while learning 
-  if trans.a:type() ~= 'torch.ByteTensor' then
-    trans.a = trans.a:byte()
+  if type(trans.a) == 'number' then
+    trans.a = torch.LongTensor{trans.a}
   end
   -- store transition "trans"
   self.memory:store(trans)
@@ -101,7 +100,8 @@ function dqn:learn(sampleTrans)
   -- organize sample transitions into minibatch input
   local mbState = sampleTrans.s
   local mbTarget = sampleTrans.y
-
+  --local mbAction = sampleTrans.a:long():view(sampleTrans.a:size(1),1) -- convert to long for the "gather" method
+  local mbAction = sampleTrans.a
   --print('mbState')
   --print(mbState)
   --print('mbTarget')
@@ -119,7 +119,8 @@ function dqn:learn(sampleTrans)
     --forward
     local Qvalue = self.qnet:forward(mbState)
     -- select Q value to the selected action
-    local ActQvalue = Qvalue[sampleTrans.a]
+
+    local ActQvalue = Qvalue:gather(2,mbAction)
    
     local f = self.criterion:forward(ActQvalue, mbTarget)
     
@@ -129,8 +130,8 @@ function dqn:learn(sampleTrans)
     -- Assign gradient 0 to the Q value of unselected actions
     local gradInput = torch.Tensor():typeAs(Qvalue):resize(Qvalue:size()):zero()
 
-    gradInput[sampleTrans.a] = df_do
-    
+    gradInput:scatter(2,mbAction,df_do)
+
     self.qnet:backward(mbState, gradInput)
     
     return f, self.gradParameters
@@ -149,23 +150,21 @@ function dqn:act(state)
   state = state:view(1,unpack(state:size():totable()))
   
   --print('state', state)
-  if not self.action then -- initialize self.action
-    local output = self.qnet:forward(state)
-    self.action = torch.Tensor(output:size(2))
-  end 
+  
   
   local rand = math.random()
   if rand > self.config.epsilon then -- greedy
-    self.action = self.action:zero()
     local Qvalue = self.qnet:forward(state)
     --print('Qvalue', Qvalue)
     local maxValue, maxID = torch.max(Qvalue,2)
     --print('maxID',maxID)
-    self.action[maxID[1][1]] = 1
+    self.action = maxID[1][1]
   else -- random action
-    self.action = self.action:zero()
-    local dim = self.action:size(1)
-    self.action[math.random(dim)] = 1
+    if not self.dim then
+      local Qvalue = self.qnet:forward(state)
+      self.dim = Qvalue:size(2)
+    end
+    self.action= math.random(self.dim)
   end
   return self.action
 end

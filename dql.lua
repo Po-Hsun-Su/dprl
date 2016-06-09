@@ -63,7 +63,7 @@ function dql:learning(episode, report)
       --print('terminal', terminal)
       local nextState = self.statePreprop(observation) -- assume fully observable
       assert(state~=nextState, 'State and nextState should not reference the same tensor')
-      local trans = {s = state, a = action:clone(), r = reward,
+      local trans = {s = state, a = action, r = reward,
                      ns = nextState, t = terminal and 0 or 1}
       local sampleTrans = self.dqn:replay(trans)
       self.dqn:learn(sampleTrans)
