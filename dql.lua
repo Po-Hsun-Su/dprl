@@ -37,6 +37,7 @@ function dql:_init(dqn, env, config, statePreprop, actPreprop)
   self.dqn = dqn
   self.env = env
   self.config = config
+  self.config.hist_len = 1
   self.statePreprop = statePreprop or function(observation) return observation end
   self.actPreprop = actPreprop or function (act) return act end
 end
@@ -57,13 +58,13 @@ function dql:learning(episode, report)
       --print('actionProp', actionProp)
       local reward, observation, terminal = self.env:step(actionProp)
       totalReward = totalReward + reward
+      
       --print('reward', reward)
       --print('terminal', terminal)
       local nextState = self.statePreprop(observation) -- assume fully observable
-      --print('nextState', nextState)
-      
-      local trans = {s = state:clone(), a = action:clone(), r = reward,
-                     ns = nextState:clone(), t = terminal}
+      assert(state~=nextState, 'State and nextState should not reference the same tensor')
+      local trans = {s = state, a = action:clone(), r = reward,
+                     ns = nextState, t = terminal}
       local sampleTrans = self.dqn:replay(trans)
       self.dqn:learn(sampleTrans)
       
