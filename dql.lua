@@ -42,6 +42,28 @@ function dql:_init(dqn, env, config, statePreprop, actPreprop)
   self.actPreprop = actPreprop or function (act) return act end
 end
 
+function dql:fillMemory()
+  while not self.dqn.memory.full do
+    xlua.progress(self.dqn.memory.index, self.dqn.memory.memorySize)
+    local observation = self.env:start()
+    local state = self.statePreprop(observation)
+    for t = 1, self.config.step do
+      local action = self.dqn:act(state)
+      local actionProp = self.actPreprop(action)
+      local reward, observation, terminal = self.env:step(actionProp)
+
+      local nextState = self.statePreprop(observation) 
+      assert(state~=nextState, 'State and nextState should not reference the same tensor')
+      local trans = {s = state, a = action:clone(), r = reward,
+                     ns = nextState, t = terminal and 0 or 1}
+      self.dqn:store(trans)
+      state = nextState -- update state
+      if terminal then
+        break
+      end            
+    end
+  end
+end
 function dql:learning(episode, report)
   local updateCounter = 0
   for e = 1, episode do
