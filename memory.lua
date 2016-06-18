@@ -72,4 +72,9 @@ function memory:index(...)
   return self.storage:index(...)
 end
 
+function memory:reset() -- reset will not clear storage
+  self.index = 0
+  self.full = false
+end
+
 return memory
