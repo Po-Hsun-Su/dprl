@@ -20,11 +20,12 @@ function async:_init(asyncAgent, env, config, statePreprop, actPreprop)
       require 'pprint'
       require 'dprl'
       require 'tds'
-      require 'rPrint'
       require 'optim'
       require 'posix'
       rlenvs = require 'rlenvs'
     end,
+    self.config.loadPackage
+    ,
     function(threadIdx)
       print('starting async thread ', threadIdx)
       threadAgent = torch.deserialize(torch.serialize(self.sharedAgent)) -- clone agent to global variable
@@ -36,11 +37,13 @@ function async:_init(asyncAgent, env, config, statePreprop, actPreprop)
   self.pool:specific(true)
 end
 
-function async:learning(Tmax)
+function async:learn(Tmax, report)
+  self.sharedAgent:training()
   -- define asynJob of each actor learner thread 
   local sharedParameters = self.sharedAgent:getParameters()
   local sharedOptimState = self.sharedAgent:getOptimState()
   local T = self.T
+  if not report then report = function() end end
   T:set(0)
   local function asynJob()
     -- get stuff from global variable
@@ -54,27 +57,31 @@ function async:learning(Tmax)
     local state, action, nextState, terminal, reward, observation
       
     -- learning loop
-    while T:get()<Tmax do
-      agent:sync(sharedParameters,T,t)
+    repeat
+      agent:sync(sharedParameters,T,t) -- reset gradent and syncronize
       tstart = t
-      if not state then state = statePreprop(env:start()) end
-      while not terminal and t-tstart < agent.config.tmax do
+      if not state then state = statePreprop(env:start()) end -- get state from nextstate or start again
+      repeat 
         action = agent:act(state) -- pick action
         reward, observation, terminal = env:step(actPreprop(action)) -- get feedback from environment
-        nextState = statePreprop(observation) 
+        nextState = statePreprop(observation)
         agent:store({s = state, a = action,r = reward}) -- store transition
         T:inc()
         t = t + 1
-        state = nextState
-      end
+        report({s = state, a = action,r = reward, ns = nextState, t = terminal})
+        state = nextState:clone()
+      until terminal or t-tstart == agent.config.tmax
+      
       agent:accGradParameters(nextState, terminal)
       agent:update(sharedParameters, T, t, sharedOptimState)
+ 
       -- reset state if at terminal state 
       if terminal then
         state = nil
         terminal = nil
       end
-    end
+    until  T:get()>Tmax
+    
     return __threadid
   end
 
@@ -85,11 +92,48 @@ function async:learning(Tmax)
         print('Async thread ' ..  id .. ' finished')
       end
     )
-  end
-  
+  end 
   -- wait till all threads finish
   self.pool:synchronize()
 end
 
+function async:test(episode, report, actPreprop)
+  
+  local env = self.env
+  local agent = self.sharedAgent
+  agent:evaluate()
+  local statePreprop = self.statePreprop
+  actPreprop = actPreprop or self.actPreprop
+  -- default report
+  if not report then
+    local totalreward = 0
+    report = function (s, a, r, ns, t)
+      totalreward = totalreward + r
+      if t then
+        print(totalreward)
+        totalreward = 0
+      end
+    end
+  end
+  -- test begin
+  for e = 1, episode do
+    local terminal, nextState, reward, action, observation
+    local state = statePreprop(env:start())
+    local steps = 0
+    while not terminal and steps < self.config.maxSteps do
+      action = agent:act(state)
+      reward, observation, terminal = env:step(actPreprop(action))
+      nextState = statePreprop(observation)
+      report(state, action, reward, nextState, terminal)
+      state = nextState
+      steps = steps + 1
+    end
+  end  
+end
 
 return async
+
+
+
+
+
