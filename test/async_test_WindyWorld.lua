@@ -74,7 +74,7 @@ end
 
 
 
-local a3c = dprl.async(aac, env, asyncConfig, statePreprop, actionPreprop)
+local a3c = dprl.asyncl(aac, env, asyncConfig, statePreprop, actionPreprop)
 --print('Before learning: a3c.sharedAgent:getParameters()')
 --rPrint(a3c.sharedAgent:getParameters())
 
