@@ -8,7 +8,9 @@ function memory:_init(memorySize)
   self.full = false
   self.storage = nil
 end
-
+function memory:cuda()
+  self.usecuda = true
+end
 function memory:store(data)
   -- initialize self.storage if it's nil
   if not self.storage then
@@ -17,7 +19,11 @@ function memory:store(data)
       self.istable = true
       for key, value in pairs(data) do
         if type(value) == 'number' then
-          self.storage[key] = torch.Tensor(self.memorySize) -- 1D Tensor
+          if self.usecuda then
+            self.storage[key] = torch.CudaTensor(self.memorySize)
+          else
+            self.storage[key] = torch.Tensor(self.memorySize) -- 1D Tensor
+          end
         else 
           self.storage[key] = torch.Tensor():typeAs(value):resize(self.memorySize,unpack(value:size():totable()))
         end

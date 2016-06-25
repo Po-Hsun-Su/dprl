@@ -52,6 +52,13 @@ function dqn:_init(qnet, config, optim, optimConfig)
     self.criterion = nn.MSECriterion()
   end
 end
+
+function dqn:cuda()
+  self.qnet:cuda()
+  self.Tqnet:cuda()
+  self.memory:cuda()
+end
+
 function dqn:store(trans)
   -- convert action to ByteTensor for faster indexing while learning 
   if trans.a:type() ~= 'torch.ByteTensor' then

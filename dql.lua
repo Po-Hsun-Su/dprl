@@ -41,7 +41,9 @@ function dql:_init(dqn, env, config, statePreprop, actPreprop)
   self.statePreprop = statePreprop or function(observation) return observation end
   self.actPreprop = actPreprop or function (act) return act end
 end
-
+function dql:cuda()
+  self.dqn:cuda()
+end
 function dql:fillMemory()
   while not self.dqn.memory.full do
     xlua.progress(self.dqn.memory.index, self.dqn.memory.memorySize)
