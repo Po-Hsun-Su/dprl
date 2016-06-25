@@ -10,5 +10,6 @@ require 'Bootstrap'
 dprl.bdqn = require 'bdqn'
 dprl.bdql = require 'bdql'
 dprl.aac = require 'aac'
-dprl.async = require 'async'
+dprl.asyncl = require 'asyncl'
+
 return dprl
