@@ -1,13 +1,14 @@
 local classic = require 'classic'
-require 'classic.torch' 
-local async = classic.class('async')
+require 'classic.torch'
 local threads = require 'threads'
+threads.Threads.serialization('threads.sharedserialize')
 require 'posix'
 local tds = require 'tds'
-threads.Threads.serialization('threads.sharedserialize')
+require 'xlua'
+local asyncl = classic.class('asyncl')
 
-function async:_init(asyncAgent, env, config, statePreprop, actPreprop)
-  self.sharedAgent = asyncAgent
+function asyncl:_init(asynclAgent, env, config, statePreprop, actPreprop)
+  self.sharedAgent = asynclAgent
   self.env = env
   self.config = config
   self.statePreprop = statePreprop or function(observation) return observation end
@@ -27,7 +28,7 @@ function async:_init(asyncAgent, env, config, statePreprop, actPreprop)
     self.config.loadPackage
     ,
     function(threadIdx)
-      print('starting async thread ', threadIdx)
+      print('starting asyncl thread ', threadIdx)
       threadAgent = torch.deserialize(torch.serialize(self.sharedAgent)) -- clone agent to global variable
       threadEnv = torch.deserialize(torch.serialize(self.env)) -- clone by serialization. Is there a better way to clone env?
       threadStatePreprop = self.statePreprop
@@ -37,7 +38,7 @@ function async:_init(asyncAgent, env, config, statePreprop, actPreprop)
   self.pool:specific(true)
 end
 
-function async:learn(Tmax, report)
+function asyncl:learn(Tmax, stepReport)
   self.sharedAgent:training()
   -- define asynJob of each actor learner thread 
   local sharedParameters = self.sharedAgent:getParameters()
@@ -55,7 +56,7 @@ function async:learn(Tmax, report)
     local tstart = 0
     local t = 0
     local state, action, nextState, terminal, reward, observation
-      
+    
     -- learning loop
     repeat
       agent:sync(sharedParameters,T,t) -- reset gradent and syncronize
@@ -68,13 +69,13 @@ function async:learn(Tmax, report)
         agent:store({s = state, a = action,r = reward}) -- store transition
         T:inc()
         t = t + 1
-        report({s = state, a = action,r = reward, ns = nextState, t = terminal})
+        stepReport(T, {s = state, a = action,r = reward, ns = nextState, t = terminal},agent)
         state = nextState:clone()
       until terminal or t-tstart == agent.config.tmax
       
       agent:accGradParameters(nextState, terminal)
       agent:update(sharedParameters, T, t, sharedOptimState)
- 
+      
       -- reset state if at terminal state 
       if terminal then
         state = nil
@@ -89,7 +90,7 @@ function async:learn(Tmax, report)
   for i = 1, self.config.nthread do
     self.pool:addjob(i, asynJob,
       function(id)
-        print('Async thread ' ..  id .. ' finished')
+        --print('asyncl thread ' ..  id .. ' finished')
       end
     )
   end 
@@ -97,7 +98,7 @@ function async:learn(Tmax, report)
   self.pool:synchronize()
 end
 
-function async:test(episode, report, actPreprop)
+function asyncl:test(episode, report, actPreprop)
   
   local env = self.env
   local agent = self.sharedAgent
@@ -110,13 +111,14 @@ function async:test(episode, report, actPreprop)
     report = function (s, a, r, ns, t)
       totalreward = totalreward + r
       if t then
-        print(totalreward)
+        print('totalReward', totalreward)
         totalreward = 0
       end
     end
   end
   -- test begin
   for e = 1, episode do
+    xlua.progress(e,episode)
     local terminal, nextState, reward, action, observation
     local state = statePreprop(env:start())
     local steps = 0
@@ -131,7 +133,7 @@ function async:test(episode, report, actPreprop)
   end  
 end
 
-return async
+return asyncl
 
 
 
