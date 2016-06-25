@@ -81,7 +81,7 @@ local a3c = dprl.asyncl(aac, env, asyncConfig, statePreprop, actionPreprop)
 --print('Before learning: a3c.sharedAgent:getOptimState()')
 --rPrint(a3c.sharedAgent:getOptimState())
 local totalReward = 0
-local learningReport = function(trans)
+local learningReport = function(T,trans)
   --print('learning report')
   totalReward = totalReward + trans.r
   --rPrint(trans)
