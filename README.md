@@ -4,7 +4,8 @@ Deep reinforcement learning package for torch7.
 Algorithms:
 * Deep Q-learning [[1]](#references)
 * Double DQN [[2]](#references)
-* Bootstrapped DQN [[3]](#references)
+* Bootstrapped DQN (broken) [[3]](#references)
+* Asynchronous advantage actor-critic [[4]](#references)
 
 ## Installation
 
@@ -13,9 +14,18 @@ git clone https://github.com/PoHsunSu/dprl.git
 cd dprl
 luarocks make dprl-scm-1.rockspec
 ```
-## Usage
-####<a name="dql"></a> Deep Q learning (`dprl.dql`)
-`dprl.dql` implements learning procedure for Deep Q learning.
+
+## Example
+
+
+## Library
+The library provides implementation of deep reinforcement learning algorithms.
+
+####<a name="dql"></a> dql
+This class contains methods for Deep Q learning.
+```
+local dql = dprl.dql(dqn, env, config, statePreprop, actPreprop)
+```
 
 1. Initialize a deep Q learning agent.
 	```
@@ -84,7 +94,7 @@ luarocks make dprl-scm-1.rockspec
 Initilization of `dprl.ddqn` and `dprl.dqn` are identical. Double DQN is recommended because it prevents the overestimation problem in DQN [[2]](#references).
 
 
-####<a name="bdql"></a>Bootstrapped Deep Q-learning (dprl.bdql)
+####<a name="bdql"></a>Bootstrapped deep Q-learning (dprl.bdql)
 `dprl.bdql` implements learning procedure in Bootstrapped DQN. Except initialization, its usage is identical to `dprl.dql`.
 
 1. Initialize a bootstrapped deep Q-learning agent. 
@@ -93,7 +103,7 @@ Initilization of `dprl.ddqn` and `dprl.dqn` are identical. Double DQN is recomme
 	```
 	Except the first arguments `bdqn`, which is an instance of [`dprl.bdqn`](#bdqn), definitions of the other arguments are the same in [`dprl.dql`](#dql).
 
-####<a name="bdqn"></a>Bootstrapped Deep Q-network (dprl.bdqn)
+####<a name="bdqn"></a>Bootstrapped deep Q-network (dprl.bdqn)
 `dprl.bdqn` inherets [`dprl.dqn`](#dqn). It is customized for Bootstrapped Deep Q-network.
 
 1. Initialize `dprl.bdqn`
@@ -108,7 +118,11 @@ Initilization of `dprl.ddqn` and `dprl.dqn` are identical. Double DQN is recomme
 		* `headNum`: the number of heads in bootstrapped neural network `bqnet`.
 	* `optim`: see `optim` in [`dprl.dqn`](#dqn).
 	* `optimConfig`: see `optimConfig` in [`dprl.dqn`](#dqn).
-	
+
+####<a name="asyncl"></a>Asynchronous learning (dprl.asyncl)
+'dprl.asyncl'
+####<a name="aac"></a>Avantage actor-critic (dprl.aac)
+
 ## <a name="mod"></a>Modules
 
 ####<a name="Bootstrap"></a>Bootstrap (`nn.Bootstrap`)
@@ -134,11 +148,14 @@ It is passed to method `headNet:reset(param_init)` after constructing clones of 
 
 
 ## References
-[1] Mnih, V., et al. (2015). "Human-level control through deep reinforcement learning." Nature 518(7540): 529-533.
+[1] Volodymyr Mnih et al., “Human-Level Control through Deep Reinforcement Learning,” Nature 518, no. 7540 (February 26, 2015): 529–33, doi:10.1038/nature14236.
 
-[2] Lillicrap, T. P., et al. (2015). "Continuous control with deep reinforcement learning." CoRR abs/1509.02971.
+[2] Hado van Hasselt, Arthur Guez, and David Silver, “Deep Reinforcement Learning with Double Q-Learning,” arXiv:1509.06461, September 22, 2015, http://arxiv.org/abs/1509.06461.
 
-[3] Osband, I., et al. (2016). "Deep Exploration via Bootstrapped DQN." CoRR abs/1602.04621.
+[3] Ian Osband et al., “Deep Exploration via Bootstrapped DQN,” arXiv:1602.04621, February 15, 2016, http://arxiv.org/abs/1602.04621.
+
+[4] Volodymyr Mnih et al., “Asynchronous Methods for Deep Reinforcement Learning,” arXiv:1602.01783, February 4, 2016, http://arxiv.org/abs/1602.01783.
+
 
 <!---
 ## TODO
