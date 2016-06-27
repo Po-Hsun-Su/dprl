@@ -98,6 +98,7 @@ Initilization of `dprl.ddqn` and `dprl.dqn` are identical. Double DQN is recomme
 `dprl.bdql` implements learning procedure in Bootstrapped DQN. Except initialization, its usage is identical to `dprl.dql`.
 
 1. Initialize a bootstrapped deep Q-learning agent. 
+
 	```
 	local bdql = dprl.bdql(bdqn, env, config, statePreprop, actPreprop)
 	```
