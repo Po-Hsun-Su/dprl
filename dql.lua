@@ -72,26 +72,21 @@ function dql:learn(episode, report)
     -- initialize state
     local observation = self.env:start()
     local state = self.statePreprop(observation)
-    local totalReward = 0
-    local initQvalue = self.dqn.qnet:forward(state:view(1,unpack(state:size():totable()))):clone()
-    --print('init state', state)
+    
     for t = 1, self.config.step do
       local action = self.dqn:act(state)
       local actionProp = self.actPreprop(action)
-      --print('action', action)
-      --print('actionProp', actionProp)
       local reward, observation, terminal = self.env:step(actionProp)
-      totalReward = totalReward + reward
       
-      --print('reward', reward)
-      --print('terminal', terminal)
-      local nextState = self.statePreprop(observation) -- assume fully observable
-      assert(state~=nextState, 'State and nextState should not reference the same tensor')
+      local nextState = self.statePreprop(observation)
+      assert(state~=nextState, 'State and nextState should not reference the same tensor. You can clone state in statePreprop')
       local trans = {s = state, a = action:clone(), r = reward,
                      ns = nextState, t = terminal and 0 or 1}
+      if report then report(trans, t, e) end
+      
       local sampleTrans = self.dqn:replay(trans)
       self.dqn:learn(sampleTrans)
-      
+
       updateCounter = updateCounter + 1
       if updateCounter%self.config.updatePeriod == 0 then
         self.dqn:update()
@@ -102,12 +97,11 @@ function dql:learn(episode, report)
         break
       end
     end
-    if report then report(self, totalReward, initQvalue) end
   end
   return self.dqn
 end
 
-function dql:test(episode, visualization)
+function dql:test(episode, report)
   for e = 1, episode do
     -- initialize state
     local observation = self.env:start()
@@ -119,7 +113,9 @@ function dql:test(episode, visualization)
       --print('actionProp', actionProp)
       local reward, observation, terminal = self.env:step(actionProp)
       local nextState = self.statePreprop(observation) -- assume fully observable
-      if visualization then visualization(self, reward) end
+      local trans = {s = state, a = action, r = reward,
+                     ns = nextState, t = terminal}
+      if report then report(trans, t, e) end
       -- end of step
       state = nextState -- update state
       if terminal then
