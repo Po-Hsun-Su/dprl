@@ -66,7 +66,7 @@ function dql:fillMemory()
     end
   end
 end
-function dql:learning(episode, report)
+function dql:learn(episode, report)
   local updateCounter = 0
   for e = 1, episode do
     -- initialize state

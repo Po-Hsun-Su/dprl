@@ -12,7 +12,7 @@ function bdql:_init(bdqn, env, config, statePreprop, actPreprop)
   self.headNum = bdqn.config.headNum
 end
 
-function bdql:learning(episode, report)
+function bdql:learn(episode, report)
   local updateCounter = 0
   
   for e = 1, episode do
