@@ -18,16 +18,16 @@ luarocks make dprl-scm-1.rockspec
 ## Example
 
 #### Play catch using double deep Q-learning
-
+[Script](#https://github.com/PoHsunSu/dprl/blob/master/example/test-dql-catch.lua)
 #### Play catch using asynchronous advantage actor-critic
 
 ## Library
 The library provides implementation of deep reinforcement learning algorithms.
 
-####<a name="dql"></a> dprl.dql
-This class contains learning and testing procedures for **d**eep **Q** **l**earning [[1]](#references).
+####<a name="dql"></a>dprl.dql
+This class contains learning and testing procedures for **d**eep **Q**-**l**earning [[1]](#references).
 
-####<a name="dprl.dql"></a> dprl.dql(dqn, env, config, [statePreprop[, actPreprop]])
+####<a name="dprl.dql"></a>dprl.dql(dqn, env, config, [statePreprop[, actPreprop]])
 
 This is the constructor of `dql`. Its arguments are:
 
@@ -39,12 +39,12 @@ This is the constructor of `dql`. Its arguments are:
 	* `step`: number of steps before an episode terminates
 	* `updatePeriod`: number of steps between successive updates of target Q-network
 
-* `statePreprop`: a function which receives observation from `env` as argument and returns state for `dqn`. See [test-dql-catch.lua](#link) for example
+* `statePreprop`: a function which receives observation from `env` as argument and returns state for `dqn`. See [test-dql-catch.lua](#https://github.com/PoHsunSu/dprl/blob/master/example/test-dql-catch.lua) for example
 
-* `actPreprop`: a function which receives output of `dqn` and returns action for `env`. See [test-dql-catch.lua](#link) for example
+* `actPreprop`: a function which receives output of `dqn` and returns action for `env`. See [test-dql-catch.lua](#https://github.com/PoHsunSu/dprl/blob/master/example/test-dql-catch.lua) for example
 
 
-####<a name="dql:learn"></a> dql:learn(episode, [report])
+####<a name="dql:learn"></a>dql:learn(episode, [report])
 This method implements learning procedure of `dql`. Its arguments are:
 * `episode`: number of episodes which `dql` learns for
 * `report`: a function called at each step for reporting the status of learning. Its inputs are transition, current step number, and current episode number. A transition contains the following keys:
@@ -54,10 +54,10 @@ This method implements learning procedure of `dql`. Its arguments are:
 	* `ns`: next state given action `a` at state `s`
 	* `t`: boolean value telling whether `ns` is terminal state or not
 
-You can use `report` to compute total reward of an episode or print the estimated Q value by `dqn`. See [test-dql-catch.lua](#link) for example.
+You can use `report` to compute total reward of an episode or print the estimated Q value by `dqn`. See [test-dql-catch.lua](#https://github.com/PoHsunSu/dprl/blob/master/example/test-dql-catch.lua) for example.
 
 
-####<a name="dql:test"></a> dql:test(episode, [report])
+####<a name="dql:test"></a>dql:test(episode, [report])
 This method implements test procedure of `dql`. Its arguments are:
 * `episode`: number of episodes which `dql` tests for
 * `report`: see `report` in [dql:learn](#dql:learn)
