@@ -17,82 +17,72 @@ luarocks make dprl-scm-1.rockspec
 
 ## Example
 
+#### Play catch using double deep Q-learning
+
+#### Play catch using asynchronous advantage actor-critic
 
 ## Library
 The library provides implementation of deep reinforcement learning algorithms.
 
-####<a name="dql"></a> dql
-This class contains methods for Deep Q learning.
-```
-local dql = dprl.dql(dqn, env, config, statePreprop, actPreprop)
-```
+####<a name="dql"></a> dprl.dql
+This class contains learning and testing procedures for **d**eep **Q** **l**earning [[1]](#references).
 
-1. Initialize a deep Q learning agent.
-	```
-	local dql = dprl.dql(dqn, env, config, statePreprop, actPreprop)
-	```
+####<a name="dprl.dql"></a> dprl.dql(dqn, env, config, [statePreprop[, actPreprop]])
 
-	arguments:
+This is the constructor of `dql`. Its arguments are:
 
-	* `dqn`: a deep Q-network or double DQN. See [dprl.dqn](#dqn) or [dprl.ddqn](#ddqn) below.
+* `dqn`: a deep Q-network ([dprl.dqn](#dqn)) or double DQN ([dprl.ddqn](#ddqn))
 
-	* `env`: an eviroment with interfaces defined in [rlenvs](https://github.com/Kaixhin/rlenvs#api).
+* `env`: an eviroment with interfaces defined in [rlenvs](https://github.com/Kaixhin/rlenvs#api)
 
-	* `config`: a table containing configurations of `dql`
-		* step: number of steps before an episode terminates
-		* updatePeriod: number of steps between successive updates of target Q-network
+* `config`: a table containing configurations of `dql`
+	* `step`: number of steps before an episode terminates
+	* `updatePeriod`: number of steps between successive updates of target Q-network
 
-	* `statePreprop` (optional): a function processing observation from `env` into state for `dqn`. For example, observation is number and we need to convert it to tensor:
-		```
-		local statePreprop = function (observation)
-			return torch.Tensor(observation)
-		end
-		```
+* `statePreprop`: a function which receives observation from `env` as argument and returns state for `dqn`. See [test-dql-catch.lua](#link) for example
 
-	* `actPreprop` (optional): a function processing output of `dqn` into action for `env`. For example, `dqn` outputs action in onehot coding and we need to convert it to number index:
-		```
-		local actPreprop = function (action)
-			return action*torch.linspace(1, action:size(1), action:size(1))
-		end  
-		```
+* `actPreprop`: a function which receives output of `dqn` and returns action for `env`. See [test-dql-catch.lua](#link) for example
 
-2. Learning
-	```
-	dql:learning(episode, report)
-	```
-	arguments:
-	* `episode`: number of training episodes
-	* `report` (optional): a function called at the end of each episode for reporting the status of training.
 
-3. Testing
-	```
-	dql:testing(episode, visualization)
-	```
-	arguments:
-	* `episode`: number of testing episodes
-	* `visualization` (optional): a function called at the end of each step for visualization of `dqn`.
+####<a name="dql:learn"></a> dql:learn(episode, [report])
+This method implements learning procedure of `dql`. Its arguments are:
+* `episode`: number of episodes which `dql` learns for
+* `report`: a function called at each step for reporting the status of learning. Its inputs are transition, current step number, and current episode number. A transition contains the following keys:
+	* `s`: current state
+	* `a`: current action
+	* `r`: reward given action `a` at state `s`
+	* `ns`: next state given action `a` at state `s`
+	* `t`: boolean value telling whether `ns` is terminal state or not
 
-####<a name="dqn"></a>Deep Q network (`dprl.dqn`)
-`dprl.dqn` implements experience replay and training procedure of the neural network in itself. We only need to initialize it and give it to `dprl.dql`.
+You can use `report` to compute total reward of an episode or print the estimated Q value by `dqn`. See [test-dql-catch.lua](#link) for example.
 
-1. Initialize `dprl.dqn`
-	```
-	local dqn = dprl.dqn(qnet, config, optim, optimConfig)
-	```
 
-	arguments:
-	* `qnet`: a neural network model built with the [nn](https://github.com/torch/nn) package. It estimates the values of all actions given input state.
-	* `config`: a table containing the following configurations for `dqn`
-		* `replaySize`: size of replay memory	
-		* `batchSize`: size of mini-batch of training cases sampled on each replay
-		* `discount`: discount factor of reward 	
-		* `epsilon`: the ε of ε-greedy exploration
-	* `optim`: optimization in the [optim](https://github.com/torch/optim) package for training `qnet`. 
-	* `optimConfig`: configuration of `optim`
+####<a name="dql:test"></a> dql:test(episode, [report])
+This method implements test procedure of `dql`. Its arguments are:
+* `episode`: number of episodes which `dql` tests for
+* `report`: see `report` in [dql:learn](#dql:learn)
 
-####<a name="ddqn"></a>Double DQN (`dprl.ddqn`)
-Initilization of `dprl.ddqn` and `dprl.dqn` are identical. Double DQN is recommended because it prevents the overestimation problem in DQN [[2]](#references).
+####<a name="dqn"></a>dprl.dqn
+"dqn" means **d**eep **Q**-**n**etwork [[1]](#references). It is the backend of `dql`. It implements interfaces to train the underlying neural network model. It also implements experiment replay. 
 
+####<a name="dprl.dqn"></a>dprl.dqn(qnet, config, optim, optimConfig)
+This is the constructor of `dqn`. Its arguments are:
+* `qnet`: a neural network model built with the [nn](https://github.com/torch/nn) package. Its input is always **mini-batch of states** whose dimension defined by `statePreprop` (see [dprl.dql](#dprl.dql)). Its output is estimated Q values of all possible actions.
+
+* `config`: a table containing the following configurations of `dqn`
+	* `replaySize`: size of replay memory	
+	* `batchSize`: size of mini-batch of training cases sampled on each replay
+	* `discount`: discount factor of reward
+	* `epsilon`: the ε of ε-greedy exploration
+* `optim`: optimization in the [optim](https://github.com/torch/optim) package for training `qnet`. 
+* `optimConfig`: configuration of `optim`
+
+####<a name="ddqn"></a>dprl.ddqn
+"ddqn" means **d**ouble **d**eep **Q**-**n**etwork [[2]](#references). It inherets from `dprl.dqn`. We get double deep Q-learning by giving it, instead of [`dqn`](#dqn), to [`dql`](#dql) . 
+
+The only difference of `dprl.ddqn` to `dprl.dqn` is how it compute target Q-value. `dprl.ddqn` is recommended because it alleviate the over-estimation problem of `dprl.dqn` [[2]](#references). 
+####<a name="dprl.dqnn"></a>dprl.dqnn(qnet, config, optim, optimConfig)
+This is the constructor of `dprl.dqnn`. Its arguments are identical to [dprl.dqn](#dprl.dqn).
 
 ####<a name="bdql"></a>Bootstrapped deep Q-learning (dprl.bdql)
 `dprl.bdql` implements learning procedure in Bootstrapped DQN. Except initialization, its usage is identical to `dprl.dql`.
@@ -145,7 +135,7 @@ local bqnet = nn.Sequential():add(shareNet):add(boostrappedHeadNet)
 `param_init`: a scalar value controlling the range or variance of parameter initialization in headNet.
 It is passed to method `headNet:reset(param_init)` after constructing clones of headNet.
 
-##<a name="API"></a>API
+<!---##<a name="API"></a>API-->
 
 
 ## References
