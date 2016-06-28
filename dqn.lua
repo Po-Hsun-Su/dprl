@@ -45,18 +45,15 @@ function dqn:_init(qnet, config, optim, optimConfig)
   self.optim = optim
   self.optimConfig = optimConfig
   self.memory = memory(self.config.replaySize)
-  
-  if self.parameters:type() == 'torch.CudaTensor' then
-    self.criterion = nn.MSECriterion():cuda()
-  else
-    self.criterion = nn.MSECriterion()
-  end
+  self.criterion = nn.MSECriterion()
 end
 
 function dqn:cuda()
   self.qnet:cuda()
+  self.parameters, self.gradParameters = self.qnet:getParameters() -- The storage of parameters is changed after cuda()! 
   self.Tqnet:cuda()
   self.memory:cuda()
+  self.criterion:cuda()
 end
 
 function dqn:store(trans)
