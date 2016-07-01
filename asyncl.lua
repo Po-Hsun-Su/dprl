@@ -46,7 +46,7 @@ function asyncl:learn(Tmax, stepReport)
   local sharedParameters = self.sharedAgent:getParameters()
   local sharedOptimState = self.sharedAgent:getOptimState()
   local T = self.T
-  if not report then report = function() end end
+  if not stepReport then stepReport = function(trans, t, T) end end
   T:set(0)
   local function asynJob()
     -- get stuff from global variable
@@ -71,7 +71,7 @@ function asyncl:learn(Tmax, stepReport)
         agent:store({s = state, a = action,r = reward}) -- store transition
         T:inc()
         t = t + 1
-        stepReport(T, {s = state, a = action,r = reward, ns = nextState, t = terminal},agent)
+        stepReport({s = state, a = action,r = reward, ns = nextState, t = terminal},t, T:get())
         state = nextState:clone()
       until terminal or t-tstart == agent.config.tmax
       
@@ -100,25 +100,63 @@ function asyncl:learn(Tmax, stepReport)
   self.pool:synchronize()
 end
 
-function asyncl:test(episode, report, actPreprop)
+function asyncl:test(episode, stepReport, episodicReport, actPreprop)
+  -- sync agent
+  local sharedParameters = self.sharedAgent:getParameters()
+  for i = 1, self.config.nthread do
+    self.pool:addjob(i, function ()
+        threadAgent:sync(sharedParameters,0,0)
+      end
+    )
+  end
   
-  local env = self.env
-  local agent = self.sharedAgent
-  agent:evaluate()
-  local statePreprop = self.statePreprop
+  -- get alternative actionPreprop function
   actPreprop = actPreprop or self.actPreprop
-  -- default report
-  if not report then
+  
+  -- set report
+  if not stepReport then
     local totalreward = 0
-    report = function (s, a, r, ns, t)
+    stepReport = function (s, a, r, ns, t)
       totalreward = totalreward + r
+      local totalrewardCP = totalreward
       if t then
-        print('totalReward', totalreward)
         totalreward = 0
       end
+      return totalrewardCP
     end
+  end  
+  episodicReport = episodicReport or function(reportResult, e) end
+  
+  -- begin test
+  local E = tds.AtomicCounter()
+  local maxStep = self.config.maxSteps
+  E:set(0)
+  local function asynJob()
+    local env = threadEnv
+    local agent = threadAgent
+    local statePreprop = threadStatePreprop
+    local reportResult
+    E:inc()
+    local terminal, nextState, reward, action, observation
+    local state = statePreprop(env:start())
+    local t = 0
+    while not terminal and t < maxStep do
+      action = agent:act(state)
+      reward, observation, terminal = env:step(actPreprop(action))
+      nextState = statePreprop(observation)
+      reportResult = stepReport({s = state, a = action,r = reward, ns = nextState, t = terminal},t, E:get())
+      state = nextState
+      t = t + 1
+    end
+    return reportResult, E:get()
   end
-  -- test begin
+  self.pool:specific(false)
+  for e = 1, episode do
+    self.pool:addjob(asynJob, episodicReport)
+  end
+  self.pool:synchronize()
+  self.pool:specific(true)
+  --[[
   for e = 1, episode do
     xlua.progress(e,episode)
     local terminal, nextState, reward, action, observation
@@ -132,7 +170,8 @@ function asyncl:test(episode, report, actPreprop)
       state = nextState
       steps = steps + 1
     end
-  end  
+  end
+  ]]--
 end
 
 return asyncl
