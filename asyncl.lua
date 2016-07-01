@@ -15,24 +15,26 @@ function asyncl:_init(asynclAgent, env, config, statePreprop, actPreprop)
   self.actPreprop = actPreprop or function (act) return act end
   self.T = tds.AtomicCounter()
   -- set up thread pool
+  local loadEnv =  self.config.loadEnv or function ()
+    -- clone by serialization. Please provide envLoader if env cannot be serialized like Atari emulator.
+    return torch.deserialize(torch.serialize(env)) 
+  end
   self.pool = threads.Threads(
     config.nthread,
-    function(threadIdx) -- load package
-      require 'pprint'
+    function(threadIdx)
       require 'dprl'
       require 'tds'
       require 'optim'
       require 'posix'
-      rlenvs = require 'rlenvs'
     end,
-    self.config.loadPackage
-    ,
+    self.config.loadPackage,
     function(threadIdx)
+      -- don't use "self." here. Otherwise, "self" will be serialized  
       print('starting asyncl thread ', threadIdx)
-      threadAgent = torch.deserialize(torch.serialize(self.sharedAgent)) -- clone agent to global variable
-      threadEnv = torch.deserialize(torch.serialize(self.env)) -- clone by serialization. Is there a better way to clone env?
-      threadStatePreprop = self.statePreprop
-      threadActPreprop = self.actPreprop
+      threadAgent = torch.deserialize(torch.serialize(asynclAgent)) -- clone agent to global variable
+      threadEnv = loadEnv()
+      threadStatePreprop = statePreprop
+      threadActPreprop = actPreprop
     end
   )
   self.pool:specific(true)
