@@ -1,29 +1,22 @@
 require 'torch'
 require 'nn'
 require 'dpnn'
+
+require 'classic'
+
 local dprl = {}
 
-require 'dprl.memory'
-require 'dprl.dqn'
-require 'dprl.ddqn'
-require 'dprl.dql'
+dprl.memory = require 'dprl.memory'
+dprl.dqn = require 'dprl.dqn'
+dprl.ddqn = require 'dprl.ddqn'
+dprl.dql = require 'dprl.dql'
 
-require 'nn.Bootstrap'
-require 'dprl.bdqn'
-require 'dprl.bdql'
-
-require 'nn.EntropyRegularization'
-require 'dprl.aac'
-require 'dprl.asyncl'
-
---[[
-dprl.dqn = require 'dqn'
-dprl.ddqn = require 'ddqn'
-dprl.dql = require 'dql'
 require 'Bootstrap'
-dprl.bdqn = require 'bdqn'
-dprl.bdql = require 'bdql'
-dprl.aac = require 'aac'
-dprl.asyncl = require 'asyncl'
-]]--
+dprl.bdq = require 'dprl.bdqn'
+dprl.bdql = require 'dprl.bdql'
+
+require 'EntropyRegularization'
+dprl.aac = require 'dprl.aac'
+dprl.asyncl = require 'dprl.asyncl'
+
 return dprl
