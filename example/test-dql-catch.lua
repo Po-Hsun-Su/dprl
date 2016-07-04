@@ -75,6 +75,7 @@ print('Learning begain')
 local epsilonStart = 1
 local epsilonEnd = 0.01
 local epoch = 100
+local epsilonDecay = math.pow(epsilonEnd/epsilonStart, 1/epoch)
 local episode = 1000
 local testEpisode = 1000
 local report = function(trans, t, e)
@@ -88,7 +89,7 @@ local testReport = function(trans, t, e)
 end
 
 for i = 1, epoch do
-  dqn_param.epsilon = epsilonStart - i*(epsilonStart - epsilonEnd)/epoch
+  dqn_param.epsilon = dqn_param.epsilon*epsilonDecay
   print('learn with epsilon =', dqn_param.epsilon)
   dql:learn(episode,report)
   print('test')
