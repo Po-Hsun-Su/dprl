@@ -11,12 +11,15 @@ dprl.dqn = require 'dprl.dqn'
 dprl.ddqn = require 'dprl.ddqn'
 dprl.dql = require 'dprl.dql'
 
-require 'Bootstrap'
+require 'dprl.Bootstrap'
 dprl.bdq = require 'dprl.bdqn'
 dprl.bdql = require 'dprl.bdql'
 
-require 'EntropyRegularization'
+require 'dprl.EntropyRegularization'
+
 dprl.aac = require 'dprl.aac'
 dprl.asyncl = require 'dprl.asyncl'
+
+
 
 return dprl

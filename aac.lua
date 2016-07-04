@@ -2,7 +2,7 @@ local classic = require 'classic'
 local memory = require 'dprl.memory'
 local aac = classic.class('dprl.aac')
 require 'optim'
-local optimInit = require 'optimInit'
+local optimInit = require 'dprl.optimInit'
 
 function aac:_init(anet, cnet, config, optim, optimConfig)
   assert(torch.isTypeOf(anet.modules[#anet.modules],nn.Reinforce), 'The last module of acter network must be a subclass of nn.Reinforce')
