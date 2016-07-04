@@ -34,8 +34,8 @@ dqn implements the following functions.
     output: action (Onehot representation)
 ]]--
 local classic = require 'classic'
-local memory = require 'memory'
-local dqn = classic.class('dqn')
+local memory = require 'dprl.memory'
+local dqn = classic.class('dprl.dqn')
 
 function dqn:_init(qnet, config, optim, optimConfig)
   self.qnet = qnet:clone()

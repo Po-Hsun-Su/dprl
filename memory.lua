@@ -1,6 +1,5 @@
 local classic = require 'classic'
-
-local memory = classic.class('memory')
+local memory = classic.class('dprl.memory')
 
 function memory:_init(memorySize)
   self.memorySize = memorySize

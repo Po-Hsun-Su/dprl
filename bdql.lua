@@ -4,8 +4,7 @@ bdql: Bootstrapped deep Q learning
 ]]--
 
 local classic = require 'classic'
-local dql = require 'dql'
-local bdql, super = classic.class('bdql', dql)
+local bdql, super = classic.class('dprl.bdql', 'dprl.dql')
 
 function bdql:_init(bdqn, env, config, statePreprop, actPreprop)
   super._init(self, bdqn, env, config, statePreprop, actPreprop)

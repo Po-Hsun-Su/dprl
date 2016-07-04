@@ -5,8 +5,7 @@ The "act" method of bdqn implements deep exploration.
 ]]--
 
 local classic = require 'classic'
-local ddqn = require 'ddqn'
-local bdqn, super = classic.class('bdqn', ddqn)
+local bdqn, super = classic.class('dprl.bdqn', 'dprl.ddqn')
 
 function bdqn:_init(qnet, config, optim, optimConfig)
   super._init(self, qnet, config, optim, optimConfig)

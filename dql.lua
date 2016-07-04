@@ -31,7 +31,7 @@ require 'xlua'
 local classic = require 'classic'
 require 'classic.torch' -- for saving/loading using torch.save/torch.load
 
-local dql = classic.class('dql')
+local dql = classic.class('dprl.dql')
 
 function dql:_init(dqn, env, config, statePreprop, actPreprop)
   self.dqn = dqn
@@ -53,7 +53,6 @@ function dql:fillMemory()
       local action = self.dqn:act(state)
       local actionProp = self.actPreprop(action)
       local reward, observation, terminal = self.env:step(actionProp)
-
       local nextState = self.statePreprop(observation) 
       assert(state~=nextState, 'State and nextState should not reference the same tensor')
       local trans = {s = state, a = action:clone(), r = reward,
