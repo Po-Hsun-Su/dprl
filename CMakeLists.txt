@@ -8,5 +8,5 @@ IF(LUAROCKS_PREFIX)
 ENDIF()
 FIND_PACKAGE(Torch REQUIRED)
 
-FILE(GLOB luasrc *.lua)
+FILE(GLOB luasrc init.lua dprl/*.lua)
 ADD_TORCH_PACKAGE(dprl "" "${luasrc}" "Deep reinforcement learning package")
