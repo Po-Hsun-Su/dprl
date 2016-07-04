@@ -25,7 +25,7 @@ function EntropyRegularization:updateOutput(input)
 end
 
 function EntropyRegularization:updateGradInput(input, gradOutput)
-  local dE_da = (torch.log(input) + 1)
+  local dE_da = torch.log(input  + 0.00000001) + 1
   --print('torch.log(input)', torch.log(input))
   --print('dE_da',dE_da)
   self.gradInput =  gradOutput + self.beta*dE_da

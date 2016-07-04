@@ -1,6 +1,6 @@
 local classic = require 'classic'
-local memory = require 'memory'
-local aac = classic.class('aac')
+local memory = require 'dprl.memory'
+local aac = classic.class('dprl.aac')
 require 'optim'
 local optimInit = require 'optimInit'
 

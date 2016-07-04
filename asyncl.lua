@@ -5,7 +5,7 @@ threads.Threads.serialization('threads.sharedserialize')
 require 'posix'
 local tds = require 'tds'
 require 'xlua'
-local asyncl = classic.class('asyncl')
+local asyncl = classic.class('dprl.asyncl')
 
 function asyncl:_init(asynclAgent, env, config, statePreprop, actPreprop)
   self.sharedAgent = asynclAgent
