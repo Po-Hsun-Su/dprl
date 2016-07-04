@@ -43,7 +43,10 @@ end
 function aac:getParameters()
   return {self.actorParameters, self.criticParameters}
 end
-
+function aac:setParameters(parameters)
+  self.actorParameters:copy(parameters[1])
+  self.criticParameters:copy(parameters[2])
+end
 function aac:getOptimState()
   return self.optimState
 end
