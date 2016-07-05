@@ -65,7 +65,7 @@ end)
 if status then
   print('Use cuda')
 else
-  print(err)
+  --print(err)
 end
 
 -- learning
