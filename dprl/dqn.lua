@@ -41,11 +41,21 @@ function dqn:_init(qnet, config, optim, optimConfig)
   self.qnet = qnet:clone()
   self.parameters, self.gradParameters = self.qnet:getParameters()
   self.Tqnet = self.qnet:clone()
+  self.Tparameters = self.Tqnet:getParameters()
   self.config = config
   self.optim = optim
   self.optimConfig = optimConfig
   self.memory = memory(self.config.replaySize)
   self.criterion = nn.MSECriterion()
+end
+
+function dqn:getParameters()
+  return self.parameters
+end
+
+function dqn:setParameters(parameters)
+  self.parameters:copy(parameters)
+  self:update()
 end
 
 function dqn:cuda()
@@ -144,7 +154,7 @@ function dqn:learn(sampleTrans)
 end
 
 function dqn:update()
-  self.Tqnet = self.qnet:clone()
+  self.Tparameters:copy(self.parameters)
 end
 
 function dqn:act(state)
