@@ -16,10 +16,7 @@ dprl.bdq = require 'dprl.bdqn'
 dprl.bdql = require 'dprl.bdql'
 
 require 'dprl.EntropyRegularization'
-
 dprl.aac = require 'dprl.aac'
 dprl.asyncl = require 'dprl.asyncl'
-
-
 
 return dprl
