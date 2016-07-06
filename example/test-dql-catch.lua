@@ -1,3 +1,12 @@
+require 'torch'
+local cuda = pcall(require, 'cutorch')
+-- cmd options 
+local cmd = torch.CmdLine()
+cmd:option('-cuda', cuda and 1 or 0, 'GPU device ID (0 to disable)')
+cmd:option('-load', '', 'load saved parameters')
+cmd:option('-epsilon', 1, 'Starting epsilon of epsilon greedy')
+local opts = cmd:parse(arg)
+
 -- load package
 require 'optim'
 require 'nn'
@@ -33,9 +42,17 @@ qnet:add(nn.Linear(hiddenSize, actionRange))
 -- initialize dqn
 local optimMethod = optim.nag
 local optimConfig = {learningRate = 0.001, 
-                     momentum = 0.95}
-local dqn_param = {replaySize = 1e5, batchSize = 16, discount = 0.99, epsilon = 0.1}
+                     momentum = 0.9}
+                     
+local dqn_param = {replaySize = 1e5, batchSize = 32, discount = 0.99, epsilon = 0.1}
 local dqn = dprl.ddqn(qnet,dqn_param, optimMethod, optimConfig)
+
+-- load parameters
+if opts.load ~= '' then
+  local parameters = torch.load(opts.load)
+  dqn:setParameters(parameters)
+  print('Load parameter', opts.load)
+end
 
 -- initialize dql
 local dql_param = {step = 128, updatePeriod = 2000}
@@ -52,8 +69,8 @@ end
 
 local dql = dprl.dql(dqn, env, dql_param, statePreprop, actPreprop)
 
--- try to use cuda
-local status, err = pcall(function ()
+-- use cuda
+if opts.cuda ~= 0 then
   require 'cutorch'
   require 'cunn'
   dql:cuda()
@@ -61,18 +78,15 @@ local status, err = pcall(function ()
   dql.statePreprop = function (observation) 
     return observation:cuda()
   end
-end)
-if status then
   print('Use cuda')
-else
-  --print(err)
 end
 
 -- learning
+local epsilonStart = opts.epsilon
+dqn_param.epsilon = epsilonStart
 print('Fill replay memory')
 dql:fillMemory()
 print('Learning begain')
-local epsilonStart = 1
 local epsilonEnd = 0.01
 local epoch = 100
 local epsilonDecay = math.pow(epsilonEnd/epsilonStart, 1/epoch)
@@ -87,14 +101,23 @@ local testReport = function(trans, t, e)
   xlua.progress(e, testEpisode)
   totalReturn = totalReturn + trans.r
 end
-
+local bestAverageReturn= 0
+local date = os.date("%Y%m%d-%H%M%S") 
 for i = 1, epoch do
   dqn_param.epsilon = dqn_param.epsilon*epsilonDecay
   print('learn with epsilon =', dqn_param.epsilon)
   dql:learn(episode,report)
   print('test')
   dql:test(testEpisode, testReport)
-  print('Average return ', totalReturn/testEpisode)
+  local averageReturn = totalReturn/testEpisode
+  print('Average return ', averageReturn)
+  
+  if  averageReturn > bestAverageReturn then
+    local sharedParameters = dqn:getParameters()
+    print('Saving parameters')
+    torch.save('ddqnCatch' .. date .. '.t7',sharedParameters)
+    bestAverageReturn = averageReturn
+  end
   totalReturn = 0
 end
 
