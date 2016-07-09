@@ -62,6 +62,7 @@ function dqn:cuda()
   self.qnet:cuda()
   self.parameters, self.gradParameters = self.qnet:getParameters() -- The storage of parameters is changed after cuda()! 
   self.Tqnet:cuda()
+  self.Tparameters = self.Tqnet:getParameters()
   self.memory:cuda()
   self.criterion:cuda()
 end
