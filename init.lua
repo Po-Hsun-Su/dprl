@@ -1,7 +1,7 @@
 require 'torch'
 require 'nn'
 require 'dpnn'
-
+require 'optim'
 require 'classic'
 
 local dprl = {}
@@ -18,5 +18,8 @@ dprl.bdql = require 'dprl.bdql'
 require 'dprl.EntropyRegularization'
 dprl.aac = require 'dprl.aac'
 dprl.asyncl = require 'dprl.asyncl'
+
+require 'dprl.rmsprop'
+require 'dprl.rmspropm'
 
 return dprl
