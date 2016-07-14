@@ -7,59 +7,54 @@ local optimInit = require 'dprl.optimInit'
 function aac:_init(anet, cnet, config, optim, optimConfig)
   assert(torch.isTypeOf(anet.modules[#anet.modules],nn.Reinforce), 'The last module of acter network must be a subclass of nn.Reinforce')
   
-  self.anet = anet:clone()
-  self.cnet = cnet:clone()
-  self.actorParameters, self.actorGradParameters = self.anet:getParameters()
-  self.criticParameters, self.criticGradParameters = self.cnet:getParameters()
+  self.anet = anet
+  self.cnet = cnet
+  self.acnet = nn.ConcatTable():add(self.anet):add(self.cnet) -- pack anet and cnet to one model
+  -- get parameters once on acnet
+  self.parameters, self.gradParameters = self.acnet:getParameters()  
+  assert(self.parameters:nElement() == self.gradParameters:nElement(),
+   [[Number of elements of parameters and gradParameters doesn't match. 
+   You need to share gradParameters if parameters are shared]])
   self.config = config
   
   self.optim = optim
   self.optimConfig = optimConfig
   -- initialize optim state to share it between threads
-  self.optimState = {}
-  self.optimState.actor = optimInit(self.optim, self.actorParameters, self.actorGradParameters)
-  self.optimState.critic = optimInit(self.optim, self.criticParameters, self.criticGradParameters)
-  
-  self.memory = memory(self.config.tmax)
-  if self.criticParameters:type() == 'torch.CudaTensor' then
-    self.cnetCriterion = nn.MSECriterion():cuda()
+  if optimConfig.share then
+    self.optimState = optimInit(self.optim, self.parameters, self.gradParameters)
   else
-    self.cnetCriterion = nn.MSECriterion()
+    self.optimState = {}
   end
+  self.memory = memory(self.config.tmax)
+  self.cnetCriterion = nn.MSECriterion()
 end
 
 function aac:training()
-  self.anet:training()
-  self.cnet:training()
+  self.acnet:training()
 end
 
 
 function aac:evaluate()
-  self.anet:evaluate()
-  self.cnet:evaluate()
+  self.acnet:evaluate()
 end
 
 
 function aac:getParameters()
-  return {self.actorParameters, self.criticParameters}
+  return self.parameters
 end
 function aac:setParameters(parameters)
-  self.actorParameters:copy(parameters[1])
-  self.criticParameters:copy(parameters[2])
+  self.parameters:copy(parameters)
 end
 function aac:getOptimState()
   return self.optimState
 end
 
 function aac:zeroGradParameters()
-  self.anet:zeroGradParameters()
-  self.cnet:zeroGradParameters()
+  self.gradParameters:zero()
 end
 
-function aac:sync(sharedParameters)
-  local sharedActorParameters, sharedCriticParameters = unpack(sharedParameters)
-  self.actorParameters:copy(sharedActorParameters)
-  self.criticParameters:copy(sharedCriticParameters)
+function aac:sync(sharedParameters,T,t)
+  self.parameters:copy(sharedParameters)
 end
 
 function aac:act(state)
@@ -101,13 +96,13 @@ function aac:accGradParameters(nextState, terminal)
   for t = tend-1,1, -1 do
     R[t] = r[t] + gamma*R[t+1]
   end
-
+  
   -- accumulate gradient in minibatch
   -- critic
   local V = self.cnet:forward(mbState) -- evaluate value of all states in memory
   self.fc = self.cnetCriterion:forward(V, R)
   local dfc_do = self.cnetCriterion:backward(V, R)
-  self.cnet:backward(mbState, dfc_do)
+  self.cnet:backward(mbState, dfc_do*0.5) -- see implementation detail in https://github.com/muupan/async-rl/wiki
   
   -- actor
   -- Shouldn't sample action in forward again. The action sampled here must be the same as the one getting the reward.
@@ -116,6 +111,7 @@ function aac:accGradParameters(nextState, terminal)
   A:copy(mbAction:viewAs(A)) -- override newly sampled action with stored action. Need a less hacky way to do this
 
   self.fa = R-V
+  
   self.anet:reinforce(R-V)
   -- the last layer of anet must be a REINFORCE module in dpnn
   -- Can support other critirion for mixing supervised learning
@@ -125,21 +121,17 @@ function aac:accGradParameters(nextState, terminal)
   -- reset memory
   self.memory:reset()
   
-  return {self.actorGradParameters, self.criticGradParameters}
+  return self.gradParameters
 end
 
 function aac:update(sharedParameters, T, t, sharedOptimState)
-  local sharedActorParameters, sharedCriticParameters = unpack(sharedParameters)
-  local actorFeval = function(x)
-    return self.fa, self.actorGradParameters
-  end
-  
-  local criticFeval = function(x)
-    return self.fc, self.criticGradParameters
-  end
 
-  self.optim(actorFeval, sharedActorParameters, self.optimConfig, sharedOptimState.actor)
-  self.optim(criticFeval, sharedCriticParameters, self.optimConfig, sharedOptimState.critic)
+  local feval = function(x)
+    -- Note: gradient is computed w.r.t the parameters of thread agent. Not the shared parameter x
+    -- fevel doesn't give the gradient at x
+    return self.fc, self.gradParameters
+  end
+  self.optim(feval, sharedParameters, self.optimConfig, sharedOptimState)
 end
 
 return aac
