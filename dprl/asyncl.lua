@@ -109,7 +109,7 @@ function asyncl:test(episode, stepReport, episodicReport, actPreprop)
       end
     )
   end
-  
+  self.pool:synchronize()
   -- get alternative actionPreprop function
   actPreprop = actPreprop or self.actPreprop
   
