@@ -16,6 +16,7 @@ function aac:_init(anet, cnet, config, optim, optimConfig)
    [[Number of elements of parameters and gradParameters doesn't match. 
    You need to share gradParameters if parameters are shared]])
   self.config = config
+  self.config.criticGradScale = self.config.criticGradScale or 0.5
   
   self.optim = optim
   self.optimConfig = optimConfig
@@ -102,7 +103,7 @@ function aac:accGradParameters(nextState, terminal)
   local V = self.cnet:forward(mbState) -- evaluate value of all states in memory
   self.fc = self.cnetCriterion:forward(V, R)
   local dfc_do = self.cnetCriterion:backward(V, R)
-  self.cnet:backward(mbState, dfc_do*0.5) -- see implementation detail in https://github.com/muupan/async-rl/wiki
+  self.cnet:backward(mbState, dfc_do*self.config.criticGradScale) -- see implementation detail in https://github.com/muupan/async-rl/wiki
   
   -- actor
   -- Shouldn't sample action in forward again. The action sampled here must be the same as the one getting the reward.
