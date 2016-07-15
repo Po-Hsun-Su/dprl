@@ -23,9 +23,6 @@ function asyncl:_init(asynclAgent, env, config, statePreprop, actPreprop)
     config.nthread,
     function(threadIdx)
       require 'dprl'
-      require 'tds'
-      require 'optim'
-      require 'posix'
     end,
     self.config.loadPackage,
     function(threadIdx)
