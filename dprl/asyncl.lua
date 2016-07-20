@@ -107,10 +107,10 @@ function asyncl:test(episode, stepReport, episodicReport, actPreprop)
     )
   end
   self.pool:synchronize()
-  -- get alternative actionPreprop function
+  -- get alternative actionPreprop function if provided
   actPreprop = actPreprop or self.actPreprop
   
-  -- set report
+  -- set default report
   if not stepReport then
     local totalreward = 0
     stepReport = function (s, a, r, ns, t)
@@ -141,7 +141,8 @@ function asyncl:test(episode, stepReport, episodicReport, actPreprop)
       action = agent:act(state)
       reward, observation, terminal = env:step(actPreprop(action))
       nextState = statePreprop(observation)
-      reportResult = stepReport({s = state, a = action,r = reward, ns = nextState, t = terminal},t, E:get())
+      reportResult = stepReport({s = state, a = action, r = reward, 
+                                 ns = nextState, t = terminal},t, E:get())
       state = nextState
       t = t + 1
     end
@@ -153,22 +154,33 @@ function asyncl:test(episode, stepReport, episodicReport, actPreprop)
   end
   self.pool:synchronize()
   self.pool:specific(true)
-  --[[
+end
+
+function asyncl:visualize(episode, stepReport, episodicReport, actPreprop)
+  local maxStep = self.config.maxSteps
+  local env = self.env
+  local statePreprop = self.statePreprop
+  local agent = self.sharedAgent
+  actPreprop = actPreprop or self.actPreprop
+  
   for e = 1, episode do
-    xlua.progress(e,episode)
-    local terminal, nextState, reward, action, observation
-    local state = statePreprop(env:start())
-    local steps = 0
-    while not terminal and steps < self.config.maxSteps do
+    local t = 0
+    local terminal, nextState, reward, action, observation, nextObservation, reportResult
+    observation = env:start()
+    local state = statePreprop(observation)
+    
+    while not terminal and t < maxStep do
       action = agent:act(state)
-      reward, observation, terminal = env:step(actPreprop(action))
-      nextState = statePreprop(observation)
-      report(state, action, reward, nextState, terminal)
+      reward, nextObservation, terminal = env:step(actPreprop(action))
+      nextState = statePreprop(nextObservation)
+      reportResult = stepReport({o = observation, s = state, a = action, 
+                                 r = reward, ns = nextState, t = terminal},t, e)
       state = nextState
-      steps = steps + 1
+      observation = nextObservation
+      t = t + 1
     end
+    episodicReport(reportResult, e)
   end
-  ]]--
 end
 
 return asyncl
