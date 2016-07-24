@@ -7,12 +7,13 @@ local tds = require 'tds'
 require 'xlua'
 local asyncl = classic.class('dprl.asyncl')
 
-function asyncl:_init(asynclAgent, env, config, statePreprop, actPreprop)
+function asyncl:_init(asynclAgent, env, config, statePreprop, actPreprop, rewardPreprop)
   self.sharedAgent = asynclAgent
   self.env = env
   self.config = config
   self.statePreprop = statePreprop or function(observation) return observation end
   self.actPreprop = actPreprop or function (act) return act end
+  self.rewardPreprop = rewardPreprop or function(reward) return reward end
   self.T = tds.AtomicCounter()
   -- set up thread pool
   local loadEnv =  self.config.loadEnv or function ()
@@ -27,11 +28,12 @@ function asyncl:_init(asynclAgent, env, config, statePreprop, actPreprop)
     self.config.loadPackage,
     function(threadIdx)
       -- don't use "self." here. Otherwise, "self" will be serialized  
-      print('starting asyncl thread ', threadIdx)
       threadAgent = torch.deserialize(torch.serialize(asynclAgent)) -- clone agent to global variable
       threadEnv = loadEnv()
       threadStatePreprop = statePreprop
       threadActPreprop = actPreprop
+      threadRewardPreprop = rewardPreprop
+      print('starting asyncl thread ', threadIdx)
     end
   )
   self.pool:specific(true)
@@ -51,6 +53,7 @@ function asyncl:learn(Tmax, stepReport)
     local env = threadEnv
     local statePreprop = threadStatePreprop
     local actPreprop = threadActPreprop
+    local rewardPreprop = threadRewardPreprop
     -- initialization
     local tstart = 0
     local t = 0
@@ -65,7 +68,7 @@ function asyncl:learn(Tmax, stepReport)
         action = agent:act(state) -- pick action
         reward, observation, terminal = env:step(actPreprop(action)) -- get feedback from environment
         nextState = statePreprop(observation)
-        agent:store({s = state, a = action,r = reward}) -- store transition
+        agent:store({s = state, a = action,r = rewardPreprop(reward)}) -- store transition
         T:inc()
         t = t + 1
         stepReport({s = state, a = action,r = reward, ns = nextState, t = terminal},t, T:get())

@@ -19,7 +19,7 @@ function AtariMod:_init(opts)
     print([[Warning: randomStarts must be larger than poolFrmsSize.
     Change AtariMod option randomStarts to]], opts.poolFrmsSize)
   end
-  opts.clipReward = opts.clipReward or true
+  
   -- put 'donothing into meta table of tensor
   local meta
   if self.gpu and self.gpu >= 0 then
@@ -75,9 +75,6 @@ function AtariMod:step(action)
   action = self.actions[action]
   -- Step in the game
   local screen, reward, terminal = self.gameEnv:step(action, self.trainingFlag)
-  if self.opts.clipReward then
-    reward = math.max(math.min(reward, 1), -1)
-  end
   return reward, self.gameEnv._screen.frameBuffer, terminal
 end
 
