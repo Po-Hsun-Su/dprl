@@ -58,7 +58,7 @@ function asyncl:learn(Tmax, stepReport)
     local tstart = 0
     local t = 0
     local state, action, nextState, terminal, reward, observation
-    
+    agent:training()
     -- learning loop
     repeat
       agent:sync(sharedParameters,T,t) -- reset gradent and syncronize
@@ -101,11 +101,13 @@ function asyncl:learn(Tmax, stepReport)
 end
 
 function asyncl:test(episode, stepReport, episodicReport, actPreprop)
+  self.sharedAgent:evaluate()
   -- sync agent
   local sharedParameters = self.sharedAgent:getParameters()
   for i = 1, self.config.nthread do
     self.pool:addjob(i, function ()
         threadAgent:sync(sharedParameters,0,0)
+        threadAgent:evaluate()
       end
     )
   end
@@ -160,6 +162,7 @@ function asyncl:test(episode, stepReport, episodicReport, actPreprop)
 end
 
 function asyncl:visualize(episode, stepReport, episodicReport, actPreprop)
+  self.sharedAgent:evaluate()
   local maxStep = self.config.maxSteps
   local env = self.env
   local statePreprop = self.statePreprop
