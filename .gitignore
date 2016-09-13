@@ -13,11 +13,13 @@ build/*
 *.dql
 # ignore .t7
 *.t7
-
+*.ipynb
 # other files
 Todo.md
 plot/
 results/
 tool/
 logs/
+test/
 dprl.lua
+Note
