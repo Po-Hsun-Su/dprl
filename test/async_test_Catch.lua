@@ -1,3 +1,4 @@
+require 'torch'
 -- cmd options 
 local cmd = torch.CmdLine()
 cmd:option('-threads', 4, 'number of async agent thread')
@@ -10,14 +11,13 @@ require 'rPrint'
 require 'pprint'
 require 'optim'
 require 'rPrintModule'
-require 'EntropyRegularization'
 require 'xlua'
 torch.setnumthreads(1)
-local dprl = require 'init'
+local dprl = require 'dprl'
 
 -- initialize env
-local rlenvs = require 'rlenvs'
-local env = rlenvs.Catch()
+local Catch = require 'rlenvs.Catch'
+local env = Catch()
 local stateSpec = env:getStateSpec()
 local actionSpec = env:getActionSpec()
 print('stateSpec')
@@ -55,6 +55,7 @@ anet:add(nn.ReinforceCategorical(stochastic))
 -- initialize aac
 -- set config of aac and optimization method
 local config = {tmax = 5, discount = 1}
+require 'dprl.rmspropm' -- load rmsprop with momentum implemented by Kaixhin
 local optimMethod = optim.nag
 local optimConfig = {learningRate = 0.001,
                      momentum = 0.9}
@@ -73,13 +74,13 @@ end
 local loadPackage = function(threadIdx) -- load package on creating agent threads
   require 'rPrint'
   require 'rPrintModule'
-  require 'EntropyRegularization'
   require 'xlua'
   require 'rlenvs'
+
   -- mask rPrint except thread 1
   if threadIdx ~= 1 then
-    rPrint = function () end
-    print = function () end
+    --rPrint = function () end
+    --print = function () end
   end
 end
 -- set config of async
@@ -147,6 +148,7 @@ local testEpisodicReport = function(report, e)
 end
 
 local bestAverageTotalReward= 0
+local date = os.date("%H%M%S-%Y%m%d") 
 for i = 1, epoch do
   print('Learning epoch', i)
   a3c:learn(stepsPerEpoch, learningReport)

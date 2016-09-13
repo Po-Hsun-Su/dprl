@@ -4,7 +4,6 @@ require 'rPrint'
 require 'pprint'
 require 'optim'
 require 'rPrintModule'
-require 'EntropyRegularization'
 
 local dprl = require 'init'
 
@@ -28,7 +27,7 @@ cnet:add(nn.View(-1))
 cnet:add(nn.LookupTable(stateRange,1))
 
 --print('cnet:forward', cnet:forward(torch.Tensor{{1}}))
-local beta = 0.01
+local beta = 0.1
 local stochastic = false
 local anet =  nn.Sequential()
 anet:add(nn.View(-1))
@@ -44,8 +43,10 @@ anet:add(nn.ReinforceCategorical(stochastic))
 
 -- initialize aac
 local config = {tmax = 5, discount = 1}
-local optimMethod = optim.rmsprop
-local optimConfig = {learningRate = 0.01,
+require 'dprl.rmsprop'
+local optimMethod = optim.nag
+local optimConfig = {learningRate = 0.001,
+                     momentum = 0.9,
                      alpha = 0.95,
                      epsilon = 1e-8}
 local aac = dprl.aac(anet, cnet, config, optimMethod,optimConfig)
@@ -54,7 +55,7 @@ local aac = dprl.aac(anet, cnet, config, optimMethod,optimConfig)
 local loadPackage = function(threadIdx)
   require 'rPrint'
   require 'rPrintModule'
-  require 'EntropyRegularization'
+  require 'rlenvs'
   -- mask rPrint except thread 1
   if threadIdx ~= 1 then
     rPrint = function () end
@@ -81,7 +82,7 @@ local a3c = dprl.asyncl(aac, env, asyncConfig, statePreprop, actionPreprop)
 --print('Before learning: a3c.sharedAgent:getOptimState()')
 --rPrint(a3c.sharedAgent:getOptimState())
 local totalReward = 0
-local learningReport = function(T,trans)
+local learningReport = function(trans,t,T)
   --print('learning report')
   totalReward = totalReward + trans.r
   --rPrint(trans)
@@ -91,7 +92,7 @@ local learningReport = function(T,trans)
   end
 end
 
-a3c:learn(100000, learningReport)
+a3c:learn(1000000, learningReport)
 --print('After learninga3c.sharedAgent:getParameters()')
 --rPrint(a3c.sharedAgent:getParameters()[2]:view(10,7))
 
@@ -108,16 +109,29 @@ local actionPreprop =  function(action)
   return oneHot2Index[id[1]]
 end
 
-local report = function(s, a, r, ns, t)
-  --a = actionPreprop(a)
-  --print('s = ', s, 'a = ', a, 'r = ', r)
-  totalReward = totalReward + r
-  if t then
-    print(totalReward)
-    totalReward = 0
+local testtotalReward = 0
+local testEpisode = 30
+local testStepReport = function(trans, t, E)
+  testtotalReward = testtotalReward + trans.r
+  if __threadid == 1 then
+    xlua.progress(E, testEpisode)
   end
+  local totalRewardCP = testtotalReward
+  if trans.t then
+    --print('testtotalReward',testtotalReward)
+    testtotalReward = 0
+  end
+  return totalRewardCP
 end
-a3c:test(30,report, actionPreprop)
+
+local averageTotalReward = 0
+local testEpisodicReport = function(report, e)
+  averageTotalReward = averageTotalReward + report
+end
+
+a3c:test(30,testStepReport, testEpisodicReport, actionPreprop)
+print('Average total reward')
+print(averageTotalReward/testEpisode)
 
 
 
