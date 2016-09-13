@@ -17,9 +17,9 @@ luarocks make dprl-scm-1.rockspec
 
 ## Example
 
-#### Play catch using double deep Q-learning
+#### Play Catch using double deep Q-learning
 [Script](https://github.com/PoHsunSu/dprl/blob/master/example/test-dql-catch.lua)
-#### Play catch using asynchronous advantage actor-critic
+#### Play Catch using asynchronous advantage actor-critic
 
 ## Library
 The library provides implementation of deep reinforcement learning algorithms.
