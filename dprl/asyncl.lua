@@ -11,9 +11,14 @@ function asyncl:_init(asynclAgent, env, config, statePreprop, actPreprop, reward
   self.sharedAgent = asynclAgent
   self.env = env
   self.config = config
-  self.statePreprop = statePreprop or function(observation) return observation end
-  self.actPreprop = actPreprop or function (act) return act end
-  self.rewardPreprop = rewardPreprop or function(reward) return reward end
+  -- default preprocessing functions
+  statePreprop = statePreprop or function(observation) return observation end
+  actPreprop = actPreprop or function (act) return act end
+  rewardPreprop = rewardPreprop or function(reward) return reward end
+  
+  self.actPreprop = actPreprop
+  self.statePreprop = statePreprop
+  self.rewardPreprop = rewardPreprop
   self.T = tds.AtomicCounter()
   -- set up thread pool
   local loadEnv =  self.config.loadEnv or function ()
