@@ -136,7 +136,7 @@ function asyncl:test(episode, stepReport, episodicReport, actPreprop)
   
   -- begin test
   local E = tds.AtomicCounter()
-  local maxStep = self.config.maxSteps
+  local maxSteps = self.config.maxSteps
   E:set(0)
   local function asynJob()
     local env = threadEnv
@@ -147,7 +147,7 @@ function asyncl:test(episode, stepReport, episodicReport, actPreprop)
     local terminal, nextState, reward, action, observation
     local state = statePreprop(env:start())
     local t = 0
-    while not terminal and t < maxStep do
+    while not terminal and t < maxSteps do
       action = agent:act(state)
       reward, observation, terminal = env:step(actPreprop(action))
       nextState = statePreprop(observation)
